@@ -1,0 +1,26 @@
+// add_two :: (int, int) -> int
+add_two n1 // n2 =
+{
+   dog  
+}
+
+// 
+record Cat 
+{
+    name :: text,     
+    age :: int
+}
+/* d
+main :: () 
+{
+    let xs <- [1, 2, 3, 4];
+    let c <- z; 
+
+    let __z__ <- x + c;
+
+    let dog <- name.x;
+    
+
+    as
+}
+*/

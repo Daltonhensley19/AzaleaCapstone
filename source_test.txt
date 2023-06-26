@@ -1,0 +1,7 @@
+add_two_nums :: (int, int) -> int 
+add_two_nums n1 n2 = n1 + n2
+
+main :: () 
+{
+
+}

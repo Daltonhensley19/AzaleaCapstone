@@ -5,19 +5,35 @@ Prologue:
     
     - Goal 1: Expression based.
     - Goal 2: Statically typed.
-    - Goal 3: Garbage Collected.
-    - Goal 4: Contains fundamental constructs (control flow, vars, application,
+    - Goal 3: Contains fundamental constructs (control flow, vars, application,
       iteration/repetition, etc.)
-    - Half-decent compiler error messages.
+    - Goal 4: Half-decent compiler error messages.
 
 
 
-// type signature is required! 
-addTwo :: int -> int -> int 
-addTwo n1 n2 = n1 + n2 
+// type signature is required! Inference for functions might be added in later?
+addTwo :: (int, int) -> int
+addTwo n1 n2 = {
+    n1 + n2
+}
 
-``` 
+structure Dog {
+    name :: text,
+    age :: int, 
+}
+
+choice Color {
+    Red, 
+    Green,
+    Blue
+}
+
+impl Dog {
+    
+}
+
 main :: () 
 {
-    let ret :: u8 = addTwo(2, 1); 
+    // NOTE: type inference for variable bindings
+    let ret <- addTwo(2, 1); 
 }

@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+
+/// `FileResolver` is represents an API to work with source files in a directory
 struct FileResolver {
+    /// `paths` 
     paths: Vec<PathBuf>,
     contents: Vec<String>,
 }

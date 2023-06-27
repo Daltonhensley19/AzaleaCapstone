@@ -1,7 +1,7 @@
 use std::{io::Read, path::Path};
 
-use lexer::lexer;
-use preprocessor::Preprocessor;
+use preprocessor::preprocessor::Preprocessor;
+use lexer::lexer::Lexer;
 
 fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
     // Open file using with a buffer
@@ -32,7 +32,7 @@ fn main() -> anyhow::Result<()> {
         .get_cleaned_sources();
 
     // Create `Lexer`
-    let mut lexer = lexer::Lexer::new(path, cleaned_source);
+    let mut lexer = Lexer::new(path, cleaned_source);
 
     // Tokenize the source file; fail fast on error
     let tokens = lexer.lex()?;

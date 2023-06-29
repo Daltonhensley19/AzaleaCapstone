@@ -1,0 +1,93 @@
+source_file = { declaration* ~ main }
+
+// Entry point to a Lambda program
+main            = { main_signature ~ main_definition}
+main_signature  = { "main" ~ type_qualifier ~ "(" ~ type_list? ~ ")" }
+main_definition = { "main" ~ def ~ block  }
+
+// Top-level declaration kinds
+declaration = { function_declaration | choice_declaration | struct_declaration  }
+
+
+// Free-standing functions 
+function_declaration = { function_signature ~ function_definition }
+function_signature   = { ident ~ type_qualifier ~ "(" ~ type_list ~ ")" ~ (returns ~ type)? }
+function_definition  = { ident ~ "(" ~ ident_list ~ ")" ~ def ~ block }
+
+
+// Enums (Sum types)
+choice_declaration = { choice_kw ~ ident ~ "{" ~ ident_list?  ~ "}" }
+choice_kw          = { "choice" }
+
+// Structs (Product types)
+struct_declaration = {struct_kw ~ ident ~ "{" ~ typed_ident_list? ~ "}" }
+struct_kw          = { "structure" }
+
+
+// Block 
+block = { "{" ~ statement* ~ expression? ~ "}" }
+
+// Statement kinds
+statement = { var_bind ~ semicolon}
+var_bind  = { "let" ~ ident ~ assign ~ expression }
+
+expression = { term ~ (( plus | minus ) ~ term)* }
+term       = { factor ~ (( mul | div ) ~ factor)* }
+factor     = { atom }
+
+// Atomic idents tokens
+alpha = { 'a'..'z' | 'A'..'Z' }
+digit = { '0'..'9' }
+ident = @{ !digit ~ (alpha | digit)+ }
+
+
+// Num Literal (note that they are constructed using raw representations!)
+int_literal   = @{ digit ~ digit* }
+float_literal = @{ ( digit ~ digit* ) ~ "." ~ (digit ~ digit*) } 
+num_literal   = { float_literal | int_literal }
+
+// Bool literal
+bool_literal  = @{ "true" | "false" } 
+
+// All literals
+literal       = { num_literal | bool_literal }
+
+// Smallest grammar units
+atom = { literal | ident | "(" ~ expression ~ ")" } 
+
+// Math operations
+plus  = { "+" }
+minus = { "-" }
+mul   = { "*" }
+div   = { "/" }
+
+// Types 
+type      = { primitive | adt }
+primitive = { "int" | "float" | "text" | "bool" }
+adt       = { ident }
+
+// Used for function signature
+type_list = { type ~ ("," ~ type)* } 
+
+
+// Punctuation
+type_qualifier = { "::" }
+semicolon      = { ";" }
+def            = { "=" }
+returns        = { "->" }
+assign         = { "<-" }
+
+
+
+
+// Comma seperated idents
+ident_list = { ident ~ ("," ~ ident)*  ~ ","? }
+
+// Comma seperated typed-idents
+typed_ident_list = { typed_ident ~ ("," ~ typed_ident)* ~ ","? }
+typed_ident      = { ident ~ type_qualifier ~ type }
+
+
+
+// Special rules 
+WHITESPACE = _{ " " | NEWLINE | "\t" | "\r"}

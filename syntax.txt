@@ -34,6 +34,5 @@ impl Dog {
 
 main :: () 
 {
-    // NOTE: type inference for variable bindings
     let ret <- addTwo(2, 1); 
 }

@@ -1,3 +1,9 @@
+//! Defines the lexer (also know as a "scanner") for the Lambda compiler.
+//!
+//! The lexer, using a DFA, converts raw characters into meaningful 
+//! words and punctuation (tokens).
+
+
 use crate::errors::{LexError, LexerErrorReporter};
 use crate::span::{Span, SpanPoint};
 use crate::token::{Token, TokenHint, TokenKind};

@@ -1,3 +1,7 @@
+//! Helpful API that helps with keeping track of line and column numbers.
+//!
+//! Spans allow us to point to specific locations in a Lambda source file.
+
 use std::ops::Index;
 
 #[derive(Default, Debug, Clone, Copy)]

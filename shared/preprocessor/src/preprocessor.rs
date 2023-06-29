@@ -1,3 +1,8 @@
+//! Defines the preprocessor for the Lambda compiler.
+//!
+//! The preprocessor is responsible for stripping out C-style comments before 
+//! sending the source file off to the lexer to be tokenized.
+
 use crate::errors::{PreprocessorError, ErrorReporter};
 
 // NOTE: In the future, `content` should be Vec<String> to process many files?

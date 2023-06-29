@@ -1,3 +1,8 @@
+//! File resolved for the Lambda compiler.
+//!
+//! The file resolver is a helpful API that helps the user work with and obtain
+//! access to source files.
+
 use std::{
     fs,
     path::{Path, PathBuf},

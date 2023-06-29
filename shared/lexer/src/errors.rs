@@ -1,3 +1,7 @@
+//! Errors that may arise during lexical analysis.
+//!
+//! This file defines helpers deal with common errors during lexing.
+
 use std::path::Path;
 
 use crate::span::SpanPoint;

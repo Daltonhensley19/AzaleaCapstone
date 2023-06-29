@@ -1,3 +1,7 @@
+//! Defines the tokens that are supported by the Lambda compiler. 
+//!
+//! To add support for a new `Token`, you must first add it to this file.
+
 use std::collections::BTreeSet;
 
 use crate::span::SpanPoint;

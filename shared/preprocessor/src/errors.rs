@@ -1,3 +1,10 @@
+//! Defines the possible errors that may arise during preprocessing in the 
+//! Lambda compiler.
+//!
+//! The preprocessor strips multi-line and single-line C-style comments from 
+//! the source file.
+
+
 use ariadne::{Label, Report, ReportKind, Source};
 use thiserror::Error;
 

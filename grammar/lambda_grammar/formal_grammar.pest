@@ -31,6 +31,7 @@ block = { "{" ~ statement* ~ expression? ~ "}" }
 statement = { var_bind ~ semicolon}
 var_bind  = { "let" ~ ident ~ assign ~ expression }
 
+// Expressions 
 expression = { term ~ (( plus | minus ) ~ term)* }
 term       = { factor ~ (( mul | div ) ~ factor)* }
 factor     = { atom }

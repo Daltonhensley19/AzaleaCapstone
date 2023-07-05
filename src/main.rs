@@ -2,6 +2,9 @@ use std::{io::Read, path::Path};
 
 use preprocessor::preprocessor::Preprocessor;
 use lexer::lexer::Lexer;
+use parser::Parser;
+
+use indicatif::ProgressBar;
 
 fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
     // Open file using with a buffer
@@ -18,6 +21,13 @@ fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
 }
 
 fn main() -> anyhow::Result<()> {  
+
+    // Create progress bar to keep track of the current stage of compilation
+    // and see if we get stuck anywhere
+    const NUM_STAGES: u64 = 4;
+    let bar = ProgressBar::new(NUM_STAGES);
+        
+
     // Read source file content as a `String`
     let path           = "source_test.txt";
     let source_content = source_file_to_string(path)?;
@@ -31,16 +41,29 @@ fn main() -> anyhow::Result<()> {
         .remove_singleline_comments()
         .get_cleaned_sources();
 
+    // Stage 1 completed! (Preprocessing)
+    bar.inc(1);
+
     // Create `Lexer`
     let mut lexer = Lexer::new(path, cleaned_source);
 
     // Tokenize the source file; fail fast on error
     let tokens = lexer.lex()?;
 
+
+    // Stage 2 completed! (Lexing)
+    bar.inc(1);
+
+    // Create `Parser`
+    let mut parser = Parser::new(tokens); 
+
     // Parse tokens into the abstract syntax tree
-    //let ast = parser.parse(&tokens);
+    let ast = parser.parse();
+
+    // Stage 3 completed! (Parsing)
+    bar.inc(1);
     
-    println!("{tokens:#?}");
+    println!("{ast:#?}");
 
     Ok(())
 }

@@ -1,5 +1,5 @@
 [package]
-name = "lambdac"
+name    = "msc"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 preprocessor = {path = "shared/preprocessor/"}
-lexer = {path = "shared/lexer/"}
-anyhow = "1.0.71"
+lexer        = {path = "shared/lexer/"}
+parser       = {path = "shared/parser/"}
+anyhow       = "1.0.71"
+indicatif = "0.17.5"

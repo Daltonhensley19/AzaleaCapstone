@@ -1,4 +1,4 @@
-//! Defines the preprocessor for the Lambda compiler.
+//! Defines the preprocessor for the Morehead Lambda Compiler.
 //!
 //! The preprocessor is responsible for stripping out C-style comments before 
 //! sending the source file off to the lexer to be tokenized.

@@ -1,5 +1,5 @@
 //! Defines the possible errors that may arise during preprocessing in the 
-//! Lambda compiler.
+//! Morehead Lambda Compiler.
 //!
 //! The preprocessor strips multi-line and single-line C-style comments from 
 //! the source file.

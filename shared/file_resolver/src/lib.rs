@@ -1,4 +1,4 @@
-//! File resolved for the Lambda compiler.
+//! File resolved for the Morehead Lambda Compiler.
 //!
 //! The file resolver is a helpful API that helps the user work with and obtain
 //! access to source files.

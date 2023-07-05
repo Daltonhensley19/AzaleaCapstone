@@ -1,4 +1,4 @@
-//! Defines the tokens that are supported by the Lambda compiler. 
+//! Defines the tokens that are supported by the Morehead Lambda Compiler. 
 //!
 //! To add support for a new `Token`, you must first add it to this file.
 
@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 use crate::span::SpanPoint;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     Let,
     Ident,
@@ -115,5 +115,13 @@ impl Token {
 
     pub fn span_start_ref(&self) -> &SpanPoint {
         &self.span_start
+    }
+
+    pub fn get_token_kind(&self) -> TokenKind {
+        self.kind
+    }
+
+    pub fn is_a(&self, kind: TokenKind) -> bool {
+        self.kind == kind
     }
 }

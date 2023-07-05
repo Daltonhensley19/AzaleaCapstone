@@ -1,4 +1,4 @@
-//! Defines the lexer (also know as a "scanner") for the Lambda compiler.
+//! Defines the lexer (also know as a "scanner") for the Morehead Lambda Compiler.
 //!
 //! The lexer, using a DFA, converts raw characters into meaningful 
 //! words and punctuation (tokens).

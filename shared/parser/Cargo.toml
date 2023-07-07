@@ -6,5 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ariadne = "0.3.0"
 derive-new = "0.5.9"
 lexer = {path = "../lexer/"}
+thiserror = "1.0.41"

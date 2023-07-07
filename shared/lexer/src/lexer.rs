@@ -1,8 +1,7 @@
 //! Defines the lexer (also know as a "scanner") for the Morehead Lambda Compiler.
 //!
-//! The lexer, using a DFA, converts raw characters into meaningful 
+//! The lexer, using a DFA, converts raw characters into meaningful
 //! words and punctuation (tokens).
-
 
 use crate::errors::{LexError, LexerErrorReporter};
 use crate::span::{Span, SpanPoint};
@@ -203,8 +202,17 @@ impl Lexer {
         // Move to next position in file and get start and end span of current token
         self.incre_file_index_by(1);
         let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
+        let file_index = self.get_file_index();
+        let is_reserved = false;
 
-        Some(Token::new(ch.to_string(), kind, span_start, span_end))
+        Some(Token::new(
+            ch.to_string(),
+            kind,
+            span_start,
+            span_end,
+            file_index,
+            is_reserved,
+        ))
     }
 
     /// Create a `Token` that is one or two chars in length based on calling `peek()`.
@@ -233,20 +241,32 @@ impl Lexer {
             // Move to next position in file and get start and end span of current token
             self.incre_file_index_by(2);
             let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+            let file_index = self.get_file_index();
 
             return Some(Token::new(
                 format!("{0}{1}", ch1, ch2),
                 kind2,
                 span_start,
                 span_end,
+                file_index,
+                false,
             ));
         }
 
         // Move to next position in file and get start and end span of current token
         self.incre_file_index_by(1);
         let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
+        let file_index = self.get_file_index();
+        let is_reserved = false;
 
-        Some(Token::new(ch1.to_string(), kind1, span_start, span_end))
+        Some(Token::new(
+            ch1.to_string(),
+            kind1,
+            span_start,
+            span_end,
+            file_index,
+            is_reserved,
+        ))
     }
 }
 
@@ -273,9 +293,19 @@ impl Lexer {
         let (span_start, span_end) =
             self.get_span_start_and_end_with_offset(self.current_tok.len());
 
+        let file_index = self.get_file_index();
+
         // Create the `Token`
         let raw_token_content = self.current_tok.clone();
-        let tok = Token::new(raw_token_content, token_kind, span_start, span_end);
+        let is_reserved = false;
+        let tok = Token::new(
+            raw_token_content,
+            token_kind,
+            span_start,
+            span_end,
+            file_index,
+            is_reserved,
+        );
 
         // Push to the internal `Token` buffer
         token_buffer.push(tok);
@@ -295,15 +325,24 @@ impl Lexer {
     ///
     fn consume_ident_or_reserved(&mut self, token_buffer: &mut Vec<Token>) {
         // See if we can refine to a more specific token other then `Ident`
-        let token_kind = TokenKind::refined_or_ident(&self.current_tok);
+        let (token_kind, is_reserved) = TokenKind::refined_or_ident(&self.current_tok);
 
         // Get start and end of the current token's span
         let (span_start, span_end) =
             self.get_span_start_and_end_with_offset(self.current_tok.len());
 
+        let file_index = self.get_file_index();
+
         // Create the `Token`
         let raw_token_content = self.current_tok.clone();
-        let tok = Token::new(raw_token_content, token_kind, span_start, span_end);
+        let tok = Token::new(
+            raw_token_content,
+            token_kind,
+            span_start,
+            span_end,
+            file_index,
+            is_reserved,
+        );
 
         // Push to the internal `Token` buffer
         token_buffer.push(tok);
@@ -319,11 +358,12 @@ impl Lexer {
 impl Lexer {
     fn lex_punctuation(&mut self) -> Option<Token> {
         // Get the current character and move to next character if we find an issue
-        let Some(character) = self
-            .peek_current() else {
-                self.incre_file_index_by(1);
-                return None;
-            };
+        let Some(character) = self.peek_current()
+        else
+        {
+            self.incre_file_index_by(1);
+            return None;
+        };
 
         match character
         {
@@ -350,11 +390,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     return Some(Token::new(
                         "<-".to_string(),
                         TokenKind::Assign,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ));
                 }
                 else if next_char == '='
@@ -362,11 +407,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     return Some(Token::new(
                         "<=".to_string(),
                         TokenKind::Lte,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ));
                 }
                 else
@@ -374,11 +424,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(1);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     return Some(Token::new(
                         "<".to_string(),
                         TokenKind::Lt,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ));
                 }
             }
@@ -392,11 +447,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     return Some(Token::new(
                         "::".to_string(),
                         TokenKind::TQualifer,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ));
                 }
                 else
@@ -428,11 +488,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(1);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     Some(Token::new(
                         ".".to_string(),
                         TokenKind::RecordDot,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ))
                 }
                 // We have a `ExRange` if we observe `..`
@@ -441,11 +506,16 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+                    let file_index = self.get_file_index();
+                    let is_reserved = false;
+
                     Some(Token::new(
                         "..".to_string(),
                         TokenKind::ExRange,
                         span_start,
                         span_end,
+                        file_index,
+                        is_reserved,
                     ))
                 }
                 else
@@ -618,7 +688,7 @@ impl Lexer {
                     );
 
                     // See if `token_kind` is a ident or keyword
-                    let token_kind = if self.hint_tok == TokenHint::IdentOrKeyword
+                    let (token_kind, is_reserved) = if self.hint_tok == TokenHint::IdentOrKeyword
                     {
                         // If we were just dealing with a '_' punctuation, then we can continue to top
                         // of loop since its really apart of building idents
@@ -630,7 +700,8 @@ impl Lexer {
                         }
 
                         // See if we can refine to a more specific token other then `Ident`
-                        TokenKind::refined_or_ident(&self.current_tok)
+                         TokenKind::refined_or_ident(&self.current_tok)
+                        
                     }
                     // See if `token_kind` is number-like
                     else
@@ -648,13 +719,14 @@ impl Lexer {
 
                         // If the currently built `Token` has an `.` in it, then refine type of
                         // number
+                        let is_reserved = false;
                         if self.current_tok.contains('.')
                         {
-                            TokenKind::FloatLit
+                            (TokenKind::FloatLit, is_reserved)
                         }
                         else
                         {
-                            TokenKind::NumLit
+                            (TokenKind::NumLit, is_reserved)
                         }
                     };
 
@@ -662,9 +734,17 @@ impl Lexer {
                     let (span_start, span_end) =
                         self.get_span_start_and_end_with_offset(self.current_tok.len());
 
+                    let file_index = self.get_file_index();
+
                     // Make the `Token`
-                    let tok =
-                        Token::new(self.current_tok.clone(), token_kind, span_start, span_end);
+                    let tok = Token::new(
+                        self.current_tok.clone(),
+                        token_kind,
+                        span_start,
+                        span_end,
+                        file_index,
+                        is_reserved
+                    );
 
                     // Push `Token` to internal token buffer
                     tokens.push(tok);

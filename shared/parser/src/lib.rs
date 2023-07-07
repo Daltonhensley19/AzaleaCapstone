@@ -3,9 +3,48 @@
 //! NOTE: The formal grammar is defined in the `grammar/` directory inside the file
 //! `formal_grammar.pest`.
 
-use std::cell::Cell;
+use std::{cell::Cell, path::Path};
 
 use lexer::token::{Token, TokenKind};
+
+use ariadne::{Label, Report, ReportKind, Source};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum ParserError {
+    #[error("Failed to parse Lambda program.")]
+    ParseFail,
+}
+
+pub struct ParserErrorReporter;
+
+// Specific error report handlers
+impl ParserErrorReporter {
+    pub fn unexpected_token<'a>(
+        unexpected: &TokenKind,
+        expected_toks: &[TokenKind],
+        path: &str,
+        source: &str,
+        offset: usize,
+    ) {
+        let note = format!(
+            "`{0:?}` is an unexpected token. Expected: `{1:?}`",
+            unexpected, expected_toks
+        );
+        Report::build(ReportKind::Error, path, offset)
+            .with_code(0)
+            .with_message("Unexpected Token (syntax error)")
+            .with_label(
+                Label::new((path, offset..offset))
+                    .with_message("Here")
+                    .with_color(ariadne::Color::Red),
+            )
+            .with_note(note)
+            .finish()
+            .print((path, Source::from(source)))
+            .unwrap();
+    }
+}
 
 mod ast {
     use derive_new::new;
@@ -107,30 +146,38 @@ mod ast {
     pub struct FactOp(Token);
 }
 
-pub struct Parser {
+pub struct Parser<'parser> {
     tokens: Vec<Token>,
 
     /// `pos` is a `Cell` to help limit mutation and to keep methods of `Parser` only needing
-    /// `&self` instead of `&mut self`. This is a controlled form of mutation! 
+    /// `&self` instead of `&mut self`. This is a controlled form of mutation!
     pos: Cell<usize>,
+
+    path: &'parser Path,
+
+    cleaned_source: &'parser str,
 }
 
 /// CTOR for the `Parser`
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: Cell::new(0) }
+impl<'parser> Parser<'parser> {
+    pub fn new(tokens: Vec<Token>, path: &'parser Path, cleaned_source: &'parser str) -> Self {
+        Self {
+            tokens,
+            pos: Cell::new(0),
+            path,
+            cleaned_source,
+        }
     }
 }
 
 /// Internal helper functions to build smaller parsers  
-impl Parser {
-
-    /// Get the next upcoming `Token` by reference based on current `Parser` 
+impl Parser<'_> {
+    /// Get the next upcoming `Token` by ownership based on current `Parser`
     /// index `pos`.
-    fn peek(&self) -> &Token {
+    fn peek(&self) -> Token {
         let curr_tok_pos = &self.pos;
 
-        &self.tokens[curr_tok_pos.get()]
+        self.tokens[curr_tok_pos.get()].clone()
     }
 
     // `is_next_token()` sees if next token is what we assert it to be AND if we
@@ -149,8 +196,10 @@ impl Parser {
     }
 }
 
-impl Parser {
+impl Parser<'_> {
     pub fn parse(&self) -> ast::Program {
+        dbg!(&self.tokens);
+
         let declarations = self.parse_declarations();
         let main = self.parse_main();
 
@@ -159,39 +208,65 @@ impl Parser {
 
     fn parse_declarations(&self) -> Option<Vec<ast::Declaration>> {
         //ast::Declaration::new_function()
-        //
+
+        // TODO: while-loop might be needed to create the whole Vector
         let curr_token = self.peek();
-        let declaration = match curr_token {
+        let declaration = match curr_token
+        {
             token if token.is_a(TokenKind::Ident) => self.parse_function_declaration(),
             // TODO: Add support for `struct` and `choice` decls
-           _ => unreachable!()
-
+            _ => unreachable!(),
         };
 
         todo!()
     }
 
-    fn parse_function_declaration(&self) -> ast::Declaration {
+    fn parse_function_declaration(&self) -> Result<ast::Declaration, ParserError> {
         let function_signature = self.parse_function_signature();
         let function_definition = self.parse_function_definition();
 
-        ast::Declaration::new_function(function_signature, function_definition);
-
-        unimplemented!();
+        Ok(ast::Declaration::new_function(
+            function_signature?,
+            function_definition,
+        ))
     }
 
-    fn parse_function_signature(&self) -> ast::FuncSignature {
-        // Get name of function
-        let func_name = self.peek(); 
-        self.advance_parser_pos();
+    fn parse_function_signature(&self) -> Result<ast::FuncSignature, ParserError> {
+        // Get name of function (e.g identifier)
+        let func_name = self.try_consume(&[TokenKind::Ident])?;
 
-        // Get input types of function signature 
-        let func_input_tys = if self.peek().is_a(TokenKind::TQualifer) {
-            self.advance_parser_pos();
-        };
-        
-        unimplemented!();
-        //ast::FuncSignature::new(func_name, )
+        // See if TQualifier is given (e.g `::`) and ignore
+        let _func_t_qualifier = self.try_consume(&[TokenKind::TQualifer])?;
+
+        // See if left parenthesis is given (e.g `(`) and ignore
+        let _l_parn = self.try_consume(&[TokenKind::LParn])?;
+
+        // TODO: Add support for ADTs in function input types
+        let types = &[
+            // TokenKind::Adt,
+            TokenKind::IntTy,
+            TokenKind::BoolTy,
+            TokenKind::TextTy,
+            TokenKind::FloatTy,
+        ];
+
+        // Get function input types (e.g `int` or `bool`)
+        let func_input_tys = self.try_consume_list(types)?;
+
+        // See if right parenthesis is given (e.g `)`) and ignore
+        let _r_parn = self.try_consume(&[TokenKind::RParn])?;
+
+        // See if return arrow operator is given (e.g `->`) and ignore
+        let _r_arrow = self.try_consume(&[TokenKind::RetArrow])?;
+
+        // Get function return type
+        let ret_ty = self.try_consume(types)?;
+
+        Ok(ast::FuncSignature::new(
+            func_name,
+            Some(func_input_tys),
+            Some(ret_ty),
+        ))
     }
 
     fn parse_function_definition(&self) -> ast::FuncDefinition {
@@ -200,6 +275,71 @@ impl Parser {
 
     fn parse_main(&self) -> ast::Main {
         todo!()
+    }
+
+    fn try_consume(&self, expected_token: &[TokenKind]) -> Result<Token, ParserError> {
+        // Fetch next token in stream
+        let curr_tok = self.peek();
+
+        if !expected_token.contains(&curr_tok.get_token_kind())
+        {
+            // Print fancy compiler error
+            ParserErrorReporter::unexpected_token(
+                &curr_tok.get_token_kind(),
+                expected_token.into(),
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                curr_tok.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        }
+
+        self.advance_parser_pos();
+        Ok(curr_tok)
+    }
+
+    fn try_consume_list(&self, expected_token: &[TokenKind]) -> Result<Vec<Token>, ParserError> {
+        // Fetch next token in stream
+        let mut curr_tok = self.peek();
+
+        // See if the next token even corresponds to what we expect
+        if !expected_token.contains(&curr_tok.get_token_kind())
+        {
+            // Print fancy compiler error
+            ParserErrorReporter::unexpected_token(
+                &curr_tok.get_token_kind(),
+                expected_token.into(),
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                curr_tok.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        }
+
+        // Accumulate tokens that we consume based on `expected_token`s
+        let mut consumed_toks = Vec::new();
+        while expected_token.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
+        {
+            // Skip separators
+            if curr_tok.is_a(TokenKind::Sep)
+            {
+                self.advance_parser_pos();
+                curr_tok = self.peek();
+                continue;
+            }
+
+            consumed_toks.push(curr_tok);
+
+            // Move parser index to next token
+            self.advance_parser_pos();
+
+            // Fetch next token
+            curr_tok = self.peek();
+        }
+
+        Ok(consumed_toks)
     }
 }
 

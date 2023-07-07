@@ -29,7 +29,7 @@ fn main() -> anyhow::Result<()> {
         
 
     // Read source file content as a `String`
-    let path           = "source_test.txt";
+    let path: &str           = "source_test.txt";
     let source_content = source_file_to_string(path)?;
 
     // Create `Preprocessor` and load it with the source file
@@ -45,7 +45,7 @@ fn main() -> anyhow::Result<()> {
     bar.inc(1);
 
     // Create `Lexer`
-    let mut lexer = Lexer::new(path, cleaned_source);
+    let mut lexer = Lexer::new(path, &cleaned_source);
 
     // Tokenize the source file; fail fast on error
     let tokens = lexer.lex()?;
@@ -55,7 +55,8 @@ fn main() -> anyhow::Result<()> {
     bar.inc(1);
 
     // Create `Parser`
-    let mut parser = Parser::new(tokens); 
+    let path = std::path::Path::new(path);
+    let mut parser = Parser::new(tokens, path, cleaned_source.as_str()); 
 
     // Parse tokens into the abstract syntax tree
     let ast = parser.parse();

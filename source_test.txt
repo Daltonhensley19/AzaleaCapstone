@@ -1,1 +1,4 @@
-add_two_nums :: (int, int) -> int 
+add_two_nums :: () -> int
+add_two_nums n1 n2 = {}
+
+// Dog :: structure {}

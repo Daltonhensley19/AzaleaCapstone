@@ -8,6 +8,7 @@ use std::{cell::Cell, path::Path};
 use lexer::token::{Token, TokenKind};
 
 use ariadne::{Label, Report, ReportKind, Source};
+use either::Either::{self, Left, Right};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -222,11 +223,11 @@ impl Parser<'_> {
     }
 
     fn parse_function_declaration(&self) -> Result<ast::Declaration, ParserError> {
-        let function_signature = self.parse_function_signature();
-        let function_definition = self.parse_function_definition();
+        let function_signature = self.parse_function_signature()?;
+        let function_definition = self.parse_function_definition()?;
 
         Ok(ast::Declaration::new_function(
-            function_signature?,
+            function_signature,
             function_definition,
         ))
     }
@@ -251,25 +252,65 @@ impl Parser<'_> {
         ];
 
         // Get function input types (e.g `int` or `bool`)
-        let func_input_tys = self.try_consume_list(types)?;
+        let func_input_tys = self.optional_consume_list(types);
 
         // See if right parenthesis is given (e.g `)`) and ignore
         let _r_parn = self.try_consume(&[TokenKind::RParn])?;
 
-        // See if return arrow operator is given (e.g `->`) and ignore
-        let _r_arrow = self.try_consume(&[TokenKind::RetArrow])?;
+        // Consume either both return arrow and type, or neither (they can be omitted together)
+        let (_r_arrow, ret_ty) = self.try_consume2_or_none(&[TokenKind::RetArrow], types)?;
 
-        // Get function return type
-        let ret_ty = self.try_consume(types)?;
-
-        Ok(ast::FuncSignature::new(
-            func_name,
-            Some(func_input_tys),
-            Some(ret_ty),
-        ))
+        Ok(ast::FuncSignature::new(func_name, func_input_tys, ret_ty))
     }
 
-    fn parse_function_definition(&self) -> ast::FuncDefinition {
+    fn parse_function_definition(&self) -> Result<ast::FuncDefinition, ParserError> {
+        // Get name of function (e.g identifier)
+        let func_name = self.try_consume(&[TokenKind::Ident])?;
+
+        // Get function parameters (e.g identifiers). Can omit entirely.
+        let func_params = self.optional_consume_list(&[TokenKind::Ident]);
+
+        // Check for and ignore function def operator (e.g `=`)
+        let _func_def_op = self.try_consume(&[TokenKind::FnDef])?;
+
+        // Check for and ignore opening of block (e.g `{`)
+        let _block_open = self.try_consume(&[TokenKind::LBracket])?;
+
+        // Parse out `Block`
+        let block = self.parse_block()?;
+
+        unimplemented!();
+    }
+
+    fn parse_block(&self) -> Result<ast::Block, ParserError> {
+        let statements = self.parse_statements()?;
+        let expression = self.parse_expression()?;
+        unimplemented!();
+    }
+
+    fn parse_statements(&self) -> Result<Option<Vec<ast::Statement>>, ParserError> {
+        let mut statements = Vec::new();
+
+        // Loop to parse statements. Terminates 
+        'parse_stmts: loop
+        {
+            // See what the statement starts with to determine what it is
+            let curr_token = self.peek();
+            let statement = match curr_token
+            {
+                token if token.is_a(TokenKind::LetKw) => self.parse_var_binding()?,
+                // TODO: Add support for `struct` and `choice` decls
+                _ if statements.is_empty() => return Ok(None),
+                _ => break 'parse_stmts
+            };
+
+            statements.push(statement);
+        }
+
+        Ok(Some(statements))
+    }
+
+    fn parse_var_binding(&self) -> Result<ast::Statement, ParserError> {
         unimplemented!();
     }
 
@@ -277,16 +318,18 @@ impl Parser<'_> {
         todo!()
     }
 
-    fn try_consume(&self, expected_token: &[TokenKind]) -> Result<Token, ParserError> {
+    // Tries to consume a single Token in stream with the provided set of Tokens that are
+    // acceptable via `expected_token`
+    fn try_consume(&self, valid_tokens: &[TokenKind]) -> Result<Token, ParserError> {
         // Fetch next token in stream
         let curr_tok = self.peek();
 
-        if !expected_token.contains(&curr_tok.get_token_kind())
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
         {
             // Print fancy compiler error
             ParserErrorReporter::unexpected_token(
                 &curr_tok.get_token_kind(),
-                expected_token.into(),
+                valid_tokens.into(),
                 self.path.to_str().unwrap(),
                 self.cleaned_source,
                 curr_tok.get_file_index(),
@@ -299,17 +342,89 @@ impl Parser<'_> {
         Ok(curr_tok)
     }
 
-    fn try_consume_list(&self, expected_token: &[TokenKind]) -> Result<Vec<Token>, ParserError> {
+    // Tries to consume two Tokens based on `valid_tokens1` and `valid_tokens2` and returns either
+    // given tokens `Ok((Some(token1), Some(token2)))` or omitted tokens `Ok((None, None))` or
+    // fails with `Err(ParserError)`
+    fn try_consume2_or_none(
+        &self,
+        valid_tokens1: &[TokenKind],
+        valid_tokens2: &[TokenKind],
+    ) -> Result<(Option<Token>, Option<Token>), ParserError> {
+        let token1 = self.try_consume(valid_tokens1);
+        let token2 = self.try_consume(valid_tokens2);
+
+        // Tokens were optionally omitted, which is OK!
+        if token1.is_err() && token2.is_err()
+        {
+            return Ok((None, None));
+        }
+
+        if token1.is_ok() && token2.is_err()
+        {
+            // Clone for the error to avoid move issues.
+            // NOTE: note a performance issue since its an error case.
+            let token2 = token2?.clone();
+
+            // Print fancy compiler error
+            ParserErrorReporter::unexpected_token(
+                &token2.get_token_kind(),
+                valid_tokens2.into(),
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                token2.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        }
+
+        if token1.is_err() && token2.is_ok()
+        {
+            // Clone for the error to avoid move issues.
+            // NOTE: note a performance issue since its an error case.
+            let token1 = token1?.clone();
+
+            // Print fancy compiler error
+            ParserErrorReporter::unexpected_token(
+                &token1.get_token_kind(),
+                valid_tokens1.into(),
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                token1.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        }
+
+        Ok((Some(token1?), Some(token2?)))
+    }
+
+    // Tries to optionally consume a single Token in stream with the provided set of Tokens that are
+    // acceptable via `expected_token`. If it is not immediately found, just return `None`. No big
+    // deal!
+    fn optional_consume(&self, valid_tokens: &[TokenKind]) -> Option<Token> {
+        // Fetch next token in stream
+        let curr_tok = self.peek();
+
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
+        {
+            return None;
+        }
+
+        self.advance_parser_pos();
+        Some(curr_tok)
+    }
+
+    fn try_consume_list(&self, valid_tokens: &[TokenKind]) -> Result<Vec<Token>, ParserError> {
         // Fetch next token in stream
         let mut curr_tok = self.peek();
 
         // See if the next token even corresponds to what we expect
-        if !expected_token.contains(&curr_tok.get_token_kind())
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
         {
             // Print fancy compiler error
             ParserErrorReporter::unexpected_token(
                 &curr_tok.get_token_kind(),
-                expected_token.into(),
+                valid_tokens.into(),
                 self.path.to_str().unwrap(),
                 self.cleaned_source,
                 curr_tok.get_file_index(),
@@ -320,7 +435,7 @@ impl Parser<'_> {
 
         // Accumulate tokens that we consume based on `expected_token`s
         let mut consumed_toks = Vec::new();
-        while expected_token.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
+        while valid_tokens.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
         {
             // Skip separators
             if curr_tok.is_a(TokenKind::Sep)
@@ -340,6 +455,41 @@ impl Parser<'_> {
         }
 
         Ok(consumed_toks)
+    }
+
+    fn optional_consume_list(&self, valid_tokens: &[TokenKind]) -> Option<Vec<Token>> {
+        // Fetch next token in stream
+        let mut curr_tok = self.peek();
+
+        // See if the next token even corresponds to what we expect.
+        // NOTE: it is OK to not find a match since lists can be empty!
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
+        {
+            return None;
+        }
+
+        // Accumulate tokens that we consume based on `expected_token`s
+        let mut consumed_toks = Vec::new();
+        while valid_tokens.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
+        {
+            // Skip separators
+            if curr_tok.is_a(TokenKind::Sep)
+            {
+                self.advance_parser_pos();
+                curr_tok = self.peek();
+                continue;
+            }
+
+            consumed_toks.push(curr_tok);
+
+            // Move parser index to next token
+            self.advance_parser_pos();
+
+            // Fetch next token
+            curr_tok = self.peek();
+        }
+
+        Some(consumed_toks)
     }
 }
 

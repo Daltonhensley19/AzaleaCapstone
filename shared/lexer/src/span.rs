@@ -6,7 +6,7 @@ use std::ops::Index;
 
 #[derive(Default, Debug, Clone, Copy)]
 /// `SpanPoint` represents an individual point within the range of a `Span`
-/// Specifically, you can use `SpanPoint` to get the 
+/// Specifically, you can use `SpanPoint` to get the
 pub struct SpanPoint {
     line_num: usize,
     col_num: usize,
@@ -90,6 +90,6 @@ impl Index<usize> for Span {
     type Output = SpanPoint;
 
     fn index(&self, index: usize) -> &Self::Output {
-       &self.points[index]
+        &self.points[index]
     }
-} 
+}

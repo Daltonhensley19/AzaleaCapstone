@@ -8,7 +8,6 @@ use std::{cell::Cell, path::Path};
 use lexer::token::{Token, TokenKind};
 
 use ariadne::{Label, Report, ReportKind, Source};
-use either::Either::{self, Left, Right};
 use thiserror::Error;
 
 #[derive(Debug, Error)]

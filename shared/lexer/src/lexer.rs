@@ -202,7 +202,7 @@ impl Lexer {
         // Move to next position in file and get start and end span of current token
         self.incre_file_index_by(1);
         let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
-        let file_index = self.get_file_index();
+        let file_index = self.get_file_index().saturating_sub(1);
         let is_reserved = false;
 
         Some(Token::new(
@@ -241,7 +241,7 @@ impl Lexer {
             // Move to next position in file and get start and end span of current token
             self.incre_file_index_by(2);
             let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
-            let file_index = self.get_file_index();
+            let file_index = self.get_file_index().saturating_sub(2);
 
             return Some(Token::new(
                 format!("{0}{1}", ch1, ch2),
@@ -256,7 +256,7 @@ impl Lexer {
         // Move to next position in file and get start and end span of current token
         self.incre_file_index_by(1);
         let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
-        let file_index = self.get_file_index();
+        let file_index = self.get_file_index().saturating_sub(1);
         let is_reserved = false;
 
         Some(Token::new(
@@ -290,10 +290,11 @@ impl Lexer {
         };
 
         // Get start and end of the current token's span
+        let token_len = self.current_tok.len();
         let (span_start, span_end) =
-            self.get_span_start_and_end_with_offset(self.current_tok.len());
+            self.get_span_start_and_end_with_offset(token_len);
 
-        let file_index = self.get_file_index();
+        let file_index = self.get_file_index().saturating_sub(token_len);
 
         // Create the `Token`
         let raw_token_content = self.current_tok.clone();
@@ -328,10 +329,11 @@ impl Lexer {
         let (token_kind, is_reserved) = TokenKind::refined_or_ident(&self.current_tok);
 
         // Get start and end of the current token's span
+        let token_len = self.current_tok.len();
         let (span_start, span_end) =
-            self.get_span_start_and_end_with_offset(self.current_tok.len());
+            self.get_span_start_and_end_with_offset(token_len);
 
-        let file_index = self.get_file_index();
+        let file_index = self.get_file_index().saturating_sub(token_len);
 
         // Create the `Token`
         let raw_token_content = self.current_tok.clone();
@@ -390,7 +392,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(2);
                     let is_reserved = false;
 
                     return Some(Token::new(
@@ -407,7 +409,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(2);
                     let is_reserved = false;
 
                     return Some(Token::new(
@@ -424,7 +426,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(1);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(1);
                     let is_reserved = false;
 
                     return Some(Token::new(
@@ -447,7 +449,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(2);
                     let is_reserved = false;
 
                     return Some(Token::new(
@@ -488,7 +490,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(1);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(1);
                     let is_reserved = false;
 
                     Some(Token::new(
@@ -506,7 +508,7 @@ impl Lexer {
                     // Move to next position in file and get start and end span of current token
                     self.incre_file_index_by(2);
                     let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(2);
                     let is_reserved = false;
 
                     Some(Token::new(
@@ -731,10 +733,11 @@ impl Lexer {
                     };
 
                     // Get start and end of span of current `Token`
+                    let token_len = self.current_tok.len();
                     let (span_start, span_end) =
-                        self.get_span_start_and_end_with_offset(self.current_tok.len());
+                        self.get_span_start_and_end_with_offset(token_len);
 
-                    let file_index = self.get_file_index();
+                    let file_index = self.get_file_index().saturating_sub(token_len);
 
                     // Make the `Token`
                     let tok = Token::new(

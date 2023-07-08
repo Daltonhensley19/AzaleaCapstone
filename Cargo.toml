@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 preprocessor = {path = "shared/preprocessor/"}
+fuzzer       = {path = "shared/fuzzer/"}
 lexer        = {path = "shared/lexer/"}
 parser       = {path = "shared/parser/"}
 anyhow       = "1.0.71"

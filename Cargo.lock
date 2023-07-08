@@ -49,16 +49,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "either"
-version = "1.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
-
-[[package]]
 name = "encode_unicode"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+
+[[package]]
+name = "fuzzer"
+version = "0.1.0"
 
 [[package]]
 name = "indicatif"
@@ -107,6 +105,7 @@ name = "msc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "fuzzer",
  "indicatif",
  "lexer",
  "parser",
@@ -125,7 +124,6 @@ version = "0.1.0"
 dependencies = [
  "ariadne",
  "derive-new",
- "either",
  "lexer",
  "thiserror",
 ]

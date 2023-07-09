@@ -1,5 +1,6 @@
 use std::{io::Read, path::Path};
 
+
 use lexer::lexer::Lexer;
 use parser::Parser;
 use preprocessor::preprocessor::Preprocessor;
@@ -33,6 +34,7 @@ fn main() -> anyhow::Result<()> {
         .remove_singleline_comments()
         .get_cleaned_sources();
 
+
     // Create `Lexer`
     let mut lexer = Lexer::new(path, &cleaned_source);
 
@@ -40,11 +42,11 @@ fn main() -> anyhow::Result<()> {
     println!("[2/4] Tokenizing source...");
     let tokens = lexer.lex()?;
 
-    // Create `Parser`
+    // Create `Parser` using the tokens
     let path = std::path::Path::new(path);
     let parser = Parser::new(tokens, path, cleaned_source.as_str());
 
-    // Parse tokens into the abstract syntax tree
+    // Parse tokens into the abstract syntax tree with `parser`
     println!("[3/4] Parsing tokens...");
     let ast = parser.parse();
 

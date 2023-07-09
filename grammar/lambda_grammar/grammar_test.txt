@@ -1,14 +1,7 @@
-addTwo :: (int, int) -> int
-addTwo (n1, n2) = {
-   let x <- n1 + n2;
-
-   x
-}
-
 main :: () 
 main = {
-   let z <- 2 * 2 - 1; 
+    
+    let x <- 2 + (3 + 2);
 
-   z
 }
 

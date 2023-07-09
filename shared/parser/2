@@ -46,15 +46,12 @@ impl ParserErrorReporter {
     }
 
     pub fn var_bind_missing_rhs<'a>(
-        var_bind_name: &Token,
+        var_bind_name: &TokenKind,
         path: &str,
         source: &str,
         offset: usize,
     ) {
-        let note = format!(
-            "`{0:?}` is missing expression after `<-`.",
-            var_bind_name.get_raw_content()
-        );
+        let note = format!("`{0:?}` is missing expression after `<-`.", var_bind_name);
         Report::build(ReportKind::Error, path, offset)
             .with_code(0)
             .with_message("Let Binding Incomplete (syntax error)")
@@ -220,12 +217,14 @@ impl<'parser> Parser<'parser> {
 impl Parser<'_> {
     /// Get the next upcoming `Token` by ownership based on current `Parser`
     /// index `pos`.
-    fn peek(&self) -> Option<Token> {
+    fn peek(&self) -> Token {
         let curr_tok_pos = &self.pos;
 
-        let tok = self.tokens.get(curr_tok_pos.get()).clone();
+        let tok = self.tokens[curr_tok_pos.get() -1].clone();
 
-        tok.cloned()
+        dbg!(&tok);
+
+        tok
     }
 
     // `is_next_token()` sees if next token is what we assert it to be AND if we
@@ -233,30 +232,22 @@ impl Parser<'_> {
     fn is_a(&self, kind: TokenKind) -> bool {
         let at_eof = self.pos.get() >= self.tokens.len();
 
-        self.peek().unwrap().get_token_kind() == kind && !at_eof
+        self.peek().get_token_kind() == kind && !at_eof
     }
 
     /// `advance_parser_pos()` moves the parser's position index by one.
     fn advance_parser_pos(&self) {
         // Make sure we do not increment passed the size of a `usize`
         let new_pos = self.pos.get() + 1;
-
         self.pos.set(new_pos);
-    }
-
-    fn at_end_of_token_stream(&self) -> bool {
-        let stream_size = self.tokens.len();
-
-        self.pos.get() >= stream_size
     }
 }
 
 impl Parser<'_> {
     pub fn parse(&self) -> Result<ast::Program, ParserError> {
+        dbg!(&self.tokens);
+
         let declarations = self.parse_declarations()?;
-
-        dbg!(&declarations);
-
         let main = self.parse_main();
 
         Ok(ast::Program::new(declarations, main))
@@ -269,18 +260,17 @@ impl Parser<'_> {
         // Loop to parse declarationa. Terminates
         'parse_decls: loop
         {
-            // Halt parsing if we reach the end of the file
-            if self.at_end_of_token_stream()
-            {
-                break 'parse_decls;
-            }
-
             // See what the declaration starts with to determine what it is
-            let curr_token = self.try_peek(&[Ident, StructKw, ChoiceKw]);
+            let curr_token = self.optional_peek(&[Ident, StructKw, ChoiceKw]);
 
-            if curr_token.is_err() && declarations.is_empty()
+            if curr_token.is_none() && declarations.is_empty()
             {
                 return Ok(None);
+            }
+
+            if curr_token.is_none() && !declarations.is_empty()
+            {
+                return Ok(Some(declarations));
             }
 
             let curr_token = curr_token.unwrap();
@@ -377,7 +367,7 @@ impl Parser<'_> {
         'parse_stmts: loop
         {
             // See what the statement starts with to determine what it is
-            let curr_token = self.optional_peek(&[LetKw, StructKw, ChoiceKw]);
+            let curr_token = self.optional_consume(&[LetKw, StructKw, ChoiceKw]);
 
             if curr_token.is_none() && statements.is_empty()
             {
@@ -408,8 +398,6 @@ impl Parser<'_> {
     fn parse_var_binding(&self) -> Result<ast::Statement, ParserError> {
         use TokenKind::*;
 
-        let _let_kw = self.try_consume(&[LetKw])?;
-
         let var_bind_name = self.try_consume(&[Ident])?;
 
         let _assign_op = self.try_consume(&[Assign])?;
@@ -421,7 +409,7 @@ impl Parser<'_> {
             // Fancy compiler error
             // Print fancy compiler error
             ParserErrorReporter::var_bind_missing_rhs(
-                &var_bind_name,
+                &var_bind_name.get_token_kind(),
                 self.path.to_str().unwrap(),
                 self.cleaned_source,
                 var_bind_name.get_file_index(),
@@ -466,20 +454,6 @@ impl Parser<'_> {
             if term_op.is_some()
             {
                 let term = self.parse_term()?;
-
-                // Report error if binary operator is missing its RHS
-                if term.is_none()
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        term_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                }
-
                 let term_op = ast::TermOp::new(term_op.unwrap());
 
                 other.push((term_op, term))
@@ -585,7 +559,7 @@ impl Parser<'_> {
     // acceptable via `expected_token`
     fn try_consume(&self, valid_tokens: &[TokenKind]) -> Result<Token, ParserError> {
         // Fetch next token in stream
-        let curr_tok = self.peek().unwrap();
+        let curr_tok = self.peek();
 
         if !valid_tokens.contains(&curr_tok.get_token_kind())
         {
@@ -602,29 +576,6 @@ impl Parser<'_> {
         }
 
         self.advance_parser_pos();
-        Ok(curr_tok)
-    }
-
-    // Tries to peek a single Token in stream with the provided set of Tokens that are
-    // acceptable via `expected_token` without advancing pos in token stream
-    fn try_peek(&self, valid_tokens: &[TokenKind]) -> Result<Token, ParserError> {
-        // Fetch next token in stream
-        let curr_tok = self.peek().unwrap();
-
-        if !valid_tokens.contains(&curr_tok.get_token_kind())
-        {
-            // Print fancy compiler error
-            ParserErrorReporter::unexpected_token(
-                &curr_tok.get_token_kind(),
-                valid_tokens.into(),
-                self.path.to_str().unwrap(),
-                self.cleaned_source,
-                curr_tok.get_file_index(),
-            );
-
-            return Err(ParserError::ParseFail);
-        }
-
         Ok(curr_tok)
     }
 
@@ -689,7 +640,7 @@ impl Parser<'_> {
     // deal!
     fn optional_consume(&self, valid_tokens: &[TokenKind]) -> Option<Token> {
         // Fetch next token in stream
-        let curr_tok = self.peek().unwrap();
+        let curr_tok = self.peek();
 
         if !valid_tokens.contains(&curr_tok.get_token_kind())
         {
@@ -705,7 +656,7 @@ impl Parser<'_> {
     // deal! Note: same as `optional_consume()`, however we do not advance token pos index
     fn optional_peek(&self, valid_tokens: &[TokenKind]) -> Option<Token> {
         // Fetch next token in stream
-        let curr_tok = self.peek().unwrap();
+        let curr_tok = self.peek();
 
         if !valid_tokens.contains(&curr_tok.get_token_kind())
         {
@@ -717,7 +668,7 @@ impl Parser<'_> {
 
     fn try_consume_list(&self, valid_tokens: &[TokenKind]) -> Result<Vec<Token>, ParserError> {
         // Fetch next token in stream
-        let mut curr_tok = self.peek().unwrap();
+        let mut curr_tok = self.peek();
 
         // See if the next token even corresponds to what we expect
         if !valid_tokens.contains(&curr_tok.get_token_kind())
@@ -742,7 +693,7 @@ impl Parser<'_> {
             if curr_tok.is_a(TokenKind::Sep)
             {
                 self.advance_parser_pos();
-                curr_tok = self.peek().unwrap();
+                curr_tok = self.peek();
                 continue;
             }
 
@@ -752,7 +703,7 @@ impl Parser<'_> {
             self.advance_parser_pos();
 
             // Fetch next token
-            curr_tok = self.peek().unwrap();
+            curr_tok = self.peek();
         }
 
         Ok(consumed_toks)
@@ -760,7 +711,7 @@ impl Parser<'_> {
 
     fn optional_consume_list(&self, valid_tokens: &[TokenKind]) -> Option<Vec<Token>> {
         // Fetch next token in stream
-        let mut curr_tok = self.peek().unwrap();
+        let mut curr_tok = self.peek();
 
         // See if the next token even corresponds to what we expect.
         // NOTE: it is OK to not find a match since lists can be empty!
@@ -777,7 +728,7 @@ impl Parser<'_> {
             if curr_tok.is_a(TokenKind::Sep)
             {
                 self.advance_parser_pos();
-                curr_tok = self.peek().unwrap();
+                curr_tok = self.peek();
                 continue;
             }
 
@@ -787,7 +738,7 @@ impl Parser<'_> {
             self.advance_parser_pos();
 
             // Fetch next token
-            curr_tok = self.peek().unwrap();
+            curr_tok = self.peek();
         }
 
         Some(consumed_toks)

@@ -136,7 +136,6 @@ impl Preprocessor {
             }
         }
 
-        println!("{offset_in_file}");
         // Update result
         self.content = result;
 

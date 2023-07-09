@@ -1,4 +1,11 @@
-add_two_nums :: () -> int
-add_two_nums n1 n2 = {}
+add_two_nums :: (int, int) -> bool
+add_two_nums n1 n2 = { 
 
-// Dog :: structure {}
+    // Problem 1: derek_is_old <- 3; 
+    // Problem 2: let derek_is_old <- 3 
+
+    n1 * c
+}
+
+sub_two_nums :: (int, int) -> int
+sub_two_nums n1 n2 = { n1 - n2 }

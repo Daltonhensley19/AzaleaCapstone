@@ -19,7 +19,6 @@ fn main() -> anyhow::Result<()> {
 
     println!("{tokens:#?}");
 
-    println!("Hello, world!");
 
     Ok(())
 }

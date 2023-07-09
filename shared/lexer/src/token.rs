@@ -194,4 +194,7 @@ impl Token {
     pub fn get_file_index(&self) -> usize {
         self.file_index
     }
+    pub fn get_raw_content(&self) -> &str {
+        &self.raw_content
+    }
 }

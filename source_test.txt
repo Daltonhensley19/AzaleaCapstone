@@ -2,9 +2,8 @@ add_two_nums :: (int, int) -> bool
 add_two_nums n1 n2 = { 
 
     // Problem 1: derek_is_old <- 3; 
-    // Problem 2: let derek_is_old <- 3 
 
-    n1 * c
+    let data <- 2 + (2 - 2);
 }
 
 sub_two_nums :: (int, int) -> int

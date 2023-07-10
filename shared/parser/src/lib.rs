@@ -568,7 +568,16 @@ impl Parser<'_> {
         match curr_tok.clone().unwrap().get_token_kind()
         {
             // @todo: Look to see if we need to call `advance_parser_pos()`
-            LParn => Ok(Some(ast::Atom::new_expression(self.parse_expression()?))),
+            LParn =>
+            {
+                // Parse `(` `inner_expr` `)`
+                let inner_expr = Ok(Some(ast::Atom::new_expression(self.parse_expression()?)));
+
+                // Make sure that user remembers to close with `)`
+                let _ = self.try_consume(&[RParn])?;
+
+                inner_expr
+            }
             Ident | NumLit | FloatLit | BoolLit =>
             {
                 Ok(Some(ast::Atom::new_token(curr_tok.unwrap())))

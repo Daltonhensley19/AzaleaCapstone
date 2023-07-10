@@ -57,7 +57,7 @@ impl ParserErrorReporter {
         );
         Report::build(ReportKind::Error, path, offset)
             .with_code(0)
-            .with_message("Let Binding Incomplete (syntax error)")
+            .with_message("Binding Incomplete (syntax error)")
             .with_label(
                 Label::new((path, offset..offset))
                     .with_message("Here")
@@ -149,7 +149,8 @@ mod ast {
 
     #[derive(Debug, new)]
     pub enum Statement {
-        VarBinding { bind_name: Token, expr: Expression },
+        VarBindingInit { bind_name: Token, expr: Expression },
+        VarBindingMut { bind_name: Token, expr: Expression },
     }
 
     #[derive(Debug, new)]
@@ -218,12 +219,22 @@ impl<'parser> Parser<'parser> {
 
 /// Internal helper functions to build smaller parsers  
 impl Parser<'_> {
-    /// Get the next upcoming `Token` by ownership based on current `Parser`
+    /// Get the current `Token` by ownership based on current `Parser`
     /// index `pos`.
     fn peek(&self) -> Option<Token> {
         let curr_tok_pos = &self.pos;
 
         let tok = self.tokens.get(curr_tok_pos.get()).clone();
+
+        tok.cloned()
+    }
+
+    /// Get the next `Token` by ownership based on current `Parser`
+    /// index `pos`.
+    fn peek_next(&self) -> Option<Token> {
+        let curr_tok_pos = &self.pos;
+
+        let tok = self.tokens.get(curr_tok_pos.get().wrapping_add(1)).clone();
 
         tok.cloned()
     }
@@ -376,36 +387,46 @@ impl Parser<'_> {
         // Loop to parse statements. Terminates
         'parse_stmts: loop
         {
-            // See what the statement starts with to determine what it is
-            let curr_token = self.optional_peek(&[LetKw, StructKw, ChoiceKw]);
+            // See what the statement starts with to determine what it is.
+            // `Ident` is allowed since we could be parsing `VarBindingMut`.
+            let curr_token = self.optional_peek(&[LetKw, StructKw, ChoiceKw, Ident]);
 
+            // No statements to parse
             if curr_token.is_none() && statements.is_empty()
             {
                 return Ok(None);
             }
-
+        
+            // *No more* statements to parse
             if curr_token.is_none() && !statements.is_empty()
             {
                 return Ok(Some(statements));
             }
 
             let curr_token = curr_token.unwrap();
-
+            
+            // Parse statement
             let statement = match curr_token.get_token_kind()
             {
-                LetKw => self.parse_var_binding()?,
+                LetKw => self.parse_var_binding_init()?,
+                // Parse `VarBindingMut` if current is `Ident` and next is `<-`
+                Ident if self.optional_peek_next(&[Assign]).is_some() =>
+                {
+                    self.parse_var_binding_mutation()?
+                }
                 // @todo: Add support for `struct` and `choice` decls
                 _ if statements.is_empty() => return Ok(None),
                 _ => break 'parse_stmts,
             };
 
+            // Store in AST
             statements.push(statement);
         }
 
         Ok(Some(statements))
     }
 
-    fn parse_var_binding(&self) -> Result<ast::Statement, ParserError> {
+    fn parse_var_binding_init(&self) -> Result<ast::Statement, ParserError> {
         use TokenKind::*;
 
         let _let_kw = self.try_consume(&[LetKw])?;
@@ -432,7 +453,43 @@ impl Parser<'_> {
 
         let _semicolon = self.try_consume(&[Semicolon]);
 
-        Ok(ast::Statement::new_var_binding(var_bind_name, rhs.unwrap()))
+        Ok(ast::Statement::new_var_binding_init(
+            var_bind_name,
+            rhs.unwrap(),
+        ))
+    }
+
+    fn parse_var_binding_mutation(&self) -> Result<ast::Statement, ParserError> {
+        use TokenKind::*;
+
+        //let _let_kw = self.try_consume(&[LetKw])?;
+
+        let var_bind_name = self.try_consume(&[Ident])?;
+
+        let _assign_op = self.try_consume(&[Assign])?;
+
+        let rhs = self.parse_expression()?;
+
+        if rhs.is_none()
+        {
+            // Fancy compiler error
+            // Print fancy compiler error
+            ParserErrorReporter::var_bind_missing_rhs(
+                &var_bind_name,
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                var_bind_name.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        };
+        
+        let _semicolon = self.try_consume(&[Semicolon]);
+
+        Ok(ast::Statement::new_var_binding_mut(
+            var_bind_name,
+            rhs.unwrap(),
+        ))
     }
 
     fn parse_expression(&self) -> Result<Option<ast::Expression>, ParserError> {
@@ -715,6 +772,21 @@ impl Parser<'_> {
     fn optional_peek(&self, valid_tokens: &[TokenKind]) -> Option<Token> {
         // Fetch next token in stream
         let curr_tok = self.peek().unwrap();
+
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
+        {
+            return None;
+        }
+
+        Some(curr_tok)
+    }
+
+    // Tries to optionally peek *the next* single Token in stream with the provided set of Tokens that are
+    // acceptable via `expected_token`. If it is not immediately found, just return `None`. No big
+    // deal! Note: same as `optional_consume()`, however we do not advance token pos index
+    fn optional_peek_next(&self, valid_tokens: &[TokenKind]) -> Option<Token> {
+        // Fetch next token in stream
+        let curr_tok = self.peek_next().unwrap();
 
         if !valid_tokens.contains(&curr_tok.get_token_kind())
         {

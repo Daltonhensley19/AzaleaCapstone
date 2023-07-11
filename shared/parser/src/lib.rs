@@ -45,6 +45,31 @@ impl ParserErrorReporter {
             .unwrap();
     }
 
+    pub fn missing_ret_ty<'a>(
+        unexpected: &TokenKind,
+        expected_toks: &[TokenKind],
+        path: &str,
+        source: &str,
+        offset: usize,
+    ) {
+        let note = format!(
+            "`{0:?}` expected `{1:?}`, but no return type was given",
+            unexpected, expected_toks
+        );
+        Report::build(ReportKind::Error, path, offset)
+            .with_code(0)
+            .with_message("Missing Return Type (syntax error)")
+            .with_label(
+                Label::new((path, offset..offset))
+                    .with_message("Here")
+                    .with_color(ariadne::Color::Red),
+            )
+            .with_note(note)
+            .finish()
+            .print((path, Source::from(source)))
+            .unwrap();
+    }
+
     pub fn var_bind_missing_rhs<'a>(
         var_bind_name: &Token,
         path: &str,
@@ -266,9 +291,7 @@ impl Parser<'_> {
     pub fn parse(&self) -> Result<ast::Program, ParserError> {
         let declarations = self.parse_declarations()?;
 
-        dbg!(&declarations);
-
-        let main = self.parse_main();
+        let main = self.parse_main()?;
 
         Ok(ast::Program::new(declarations, main))
     }
@@ -280,8 +303,10 @@ impl Parser<'_> {
         // Loop to parse declarationa. Terminates
         'parse_decls: loop
         {
-            // Halt parsing if we reach the end of the file
-            if self.at_end_of_token_stream()
+            // Halt parsing declarations if we reach the end of the file
+            // or if we start parsing main
+            let at_main_token = self.optional_peek(&[MainKw]).is_some();
+            if self.at_end_of_token_stream() || at_main_token
             {
                 break 'parse_decls;
             }
@@ -396,7 +421,7 @@ impl Parser<'_> {
             {
                 return Ok(None);
             }
-        
+
             // *No more* statements to parse
             if curr_token.is_none() && !statements.is_empty()
             {
@@ -404,7 +429,7 @@ impl Parser<'_> {
             }
 
             let curr_token = curr_token.unwrap();
-            
+
             // Parse statement
             let statement = match curr_token.get_token_kind()
             {
@@ -451,7 +476,7 @@ impl Parser<'_> {
             return Err(ParserError::ParseFail);
         };
 
-        let _semicolon = self.try_consume(&[Semicolon]);
+        let _semicolon = self.try_consume(&[Semicolon])?;
 
         Ok(ast::Statement::new_var_binding_init(
             var_bind_name,
@@ -483,8 +508,8 @@ impl Parser<'_> {
 
             return Err(ParserError::ParseFail);
         };
-        
-        let _semicolon = self.try_consume(&[Semicolon]);
+
+        let _semicolon = self.try_consume(&[Semicolon])?;
 
         Ok(ast::Statement::new_var_binding_mut(
             var_bind_name,
@@ -495,6 +520,8 @@ impl Parser<'_> {
     fn parse_expression(&self) -> Result<Option<ast::Expression>, ParserError> {
         let term = self.parse_term()?;
         let other = self.parse_other_term()?;
+
+        println!("MOOSE: {term:?}");
 
         if term.is_none()
         {
@@ -643,8 +670,77 @@ impl Parser<'_> {
         }
     }
 
-    fn parse_main(&self) -> ast::Main {
-        todo!()
+    fn parse_main(&self) -> Result<ast::Main, ParserError> {
+        let main_signature = self.parse_main_signature()?;
+        let main_definition = self.parse_main_definition()?;
+
+        Ok(ast::Main::new(main_signature, main_definition))
+    }
+
+    fn parse_main_signature(&self) -> Result<ast::MainSignature, ParserError> {
+        use TokenKind::*;
+
+        // Name of main should always be `MainKw`
+        let main_signature_name = self.try_consume(&[MainKw])?;
+
+        // Check for type qualifier
+        let _main_t_qual = self.try_consume(&[TQualifer])?;
+
+        // Check for `(`
+        let _main_l_parn = self.try_consume(&[LParn])?;
+
+        // @todo: Add support for ADTs in function input types
+        let types = &[
+            // TokenKind::Adt,
+            IntTy, BoolTy, TextTy, FloatTy,
+        ];
+
+        // Input types of main
+        let input_arg_tys = self.optional_consume_list(types);
+
+        // Check for `)`
+        let _main_r_parn = self.try_consume(&[RParn])?;
+
+        // Get the return type of main
+        let (_ret_arrow_op, ret_ty) = self.try_consume2_or_none(&[RetArrow], types)?;
+
+        print!("{ret_ty:?}");
+
+        Ok(ast::MainSignature::new(
+            main_signature_name,
+            input_arg_tys,
+            ret_ty,
+        ))
+    }
+
+    fn parse_main_definition(&self) -> Result<ast::MainDefinition, ParserError> {
+        use TokenKind::*;
+
+        // Name of main definition should always be `MainKw`
+        let main_definition_name = self.try_consume(&[MainKw])?;
+
+        // Get actual `Ident` parameters for main
+        let main_input_parms = self.optional_consume_list(&[Ident]);
+
+        // Check for function definition operator (i.e `=`)
+        let _main_def_op = self.try_consume(&[FnDef])?;
+
+        // Check for left bracket for block (i.e. `{`)
+        let _main_l_bracket = self.try_consume(&[LBracket])?;
+
+        // Get `Block` for main (i.e. statements and return expression)
+        let main_block = self.parse_block()?;
+
+        // Check for right bracket for block (i.e. `}`)
+        let _main_r_bracket = self.try_consume(&[RBracket])?;
+
+        dbg!(&main_block);
+
+        Ok(ast::MainDefinition::new(
+            main_definition_name,
+            main_input_parms,
+            main_block,
+        ))
     }
 
     // Tries to consume a single Token in stream with the provided set of Tokens that are
@@ -702,43 +798,25 @@ impl Parser<'_> {
         valid_tokens1: &[TokenKind],
         valid_tokens2: &[TokenKind],
     ) -> Result<(Option<Token>, Option<Token>), ParserError> {
-        let token1 = self.try_consume(valid_tokens1);
-        let token2 = self.try_consume(valid_tokens2);
+        let token1 = self.optional_consume(valid_tokens1);
+        let token2 = self.optional_consume(valid_tokens2);
 
         // Tokens were optionally omitted, which is OK!
-        if token1.is_err() && token2.is_err()
+        if token1.is_none() && token2.is_none()
         {
             return Ok((None, None));
         }
 
-        if token1.is_ok() && token2.is_err()
+        if token1.is_some() && token2.is_none()
         {
             // Clone for the error to avoid move issues.
             // NOTE: note a performance issue since its an error case.
-            let token2 = token2?.clone();
+            let token1 = token1.unwrap().clone();
 
             // Print fancy compiler error
-            ParserErrorReporter::unexpected_token(
-                &token2.get_token_kind(),
-                valid_tokens2.into(),
-                self.path.to_str().unwrap(),
-                self.cleaned_source,
-                token2.get_file_index(),
-            );
-
-            return Err(ParserError::ParseFail);
-        }
-
-        if token1.is_err() && token2.is_ok()
-        {
-            // Clone for the error to avoid move issues.
-            // NOTE: note a performance issue since its an error case.
-            let token1 = token1?.clone();
-
-            // Print fancy compiler error
-            ParserErrorReporter::unexpected_token(
+            ParserErrorReporter::missing_ret_ty(
                 &token1.get_token_kind(),
-                valid_tokens1.into(),
+                valid_tokens2.into(),
                 self.path.to_str().unwrap(),
                 self.cleaned_source,
                 token1.get_file_index(),
@@ -747,7 +825,25 @@ impl Parser<'_> {
             return Err(ParserError::ParseFail);
         }
 
-        Ok((Some(token1?), Some(token2?)))
+        if token1.is_none() && token2.is_some()
+        {
+            // Clone for the error to avoid move issues.
+            // NOTE: note a performance issue since its an error case.
+            let token2 = token2.unwrap().clone();
+
+            // Print fancy compiler error
+            ParserErrorReporter::unexpected_token(
+                &token2.get_token_kind(),
+                valid_tokens1.into(),
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                token2.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        }
+
+        Ok((Some(token1.unwrap()), Some(token2.unwrap())))
     }
 
     // Tries to optionally consume a single Token in stream with the provided set of Tokens that are

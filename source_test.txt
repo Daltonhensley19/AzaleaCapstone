@@ -1,11 +1,12 @@
-add_two_nums :: (int, int) -> bool
-add_two_nums n1 n2 = { 
-    
-    let derek_is_old <- true;
-    derek_is_old <- false; 
-
-    derek_is_old
+add_two :: (int, int) -> int
+add_two n1 n2 = {
+    3 
 }
 
-sub_two_nums :: (int, int) -> int
-sub_two_nums n1 n2 = { n1 - n2 }
+main :: () -> int
+main = {
+    let x <- 3;
+    x <- 2;
+
+    x
+}

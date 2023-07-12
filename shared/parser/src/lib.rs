@@ -70,6 +70,25 @@ impl ParserErrorReporter {
             .unwrap();
     }
 
+    pub fn missing_sep<'a>(unexpected: &TokenKind, path: &str, source: &str, offset: usize) {
+        let note = format!(
+            "`{0:?}` was unexpected. Expected to see a comma `,`",
+            unexpected
+        );
+        Report::build(ReportKind::Error, path, offset)
+            .with_code(0)
+            .with_message("Missing Comma In List (syntax error)")
+            .with_label(
+                Label::new((path, offset..offset))
+                    .with_message("Here")
+                    .with_color(ariadne::Color::Red),
+            )
+            .with_note(note)
+            .finish()
+            .print((path, Source::from(source)))
+            .unwrap();
+    }
+
     pub fn var_bind_missing_rhs<'a>(
         var_bind_name: &Token,
         path: &str,
@@ -147,9 +166,18 @@ mod ast {
             signature: FuncSignature,
             definition: FuncDefinition,
         },
+
         // TODO: Add support for enums and structs
-        // Choice,
-        // Struct
+        Choice {
+            name: Token,
+            variants: Option<Vec<Token>>,
+        },
+
+        Struct {
+            name: Token,
+            // Tuple is `(field_name, field_type)`
+            typed_fields: Option<Vec<(Token, Token)>>
+        }
     }
 
     #[derive(Debug, new)]
@@ -324,6 +352,8 @@ impl Parser<'_> {
             let declaration = match curr_token.get_token_kind()
             {
                 Ident => self.parse_function_declaration()?,
+                ChoiceKw => self.parse_choice_declaration()?,
+                StructKw => self.parse_struct_declaration()?,
                 // @todo: Add support for `struct` and `choice` decls
                 _ => break 'parse_decls,
             };
@@ -332,6 +362,48 @@ impl Parser<'_> {
         }
 
         Ok(Some(declarations))
+    }
+
+    fn parse_choice_declaration(&self) -> Result<ast::Declaration, ParserError> {
+        use TokenKind::*;
+
+        // Check for choice keyword
+        let _choice_kw = self.try_consume(&[ChoiceKw])?;
+
+        // Get name of choice
+        let choice_name = self.try_consume(&[Ident])?;
+
+        // Check for opening left bracket for choice
+        let _choice_l_bracket = self.try_consume(&[LBracket])?;
+
+        // Get choice variants
+        let choice_variants = self.try_optional_consume_list_with_seps(&[Ident])?;
+
+        // Check for closing right bracket for choice
+        let _choice_r_bracket = self.try_consume(&[RBracket])?;
+
+        Ok(ast::Declaration::new_choice(choice_name, choice_variants))
+    }
+
+    fn parse_struct_declaration(&self) -> Result<ast::Declaration, ParserError> {
+        use TokenKind::*;
+
+        // Check for structure keyword
+        let _struct_kw = self.try_consume(&[StructKw])?;
+
+        // Get name of structure
+        let struct_name = self.try_consume(&[Ident])?;
+
+        // Check for opening left bracket for structure
+        let _struct_l_bracket = self.try_consume(&[LBracket])?;
+
+        // Get structure fields
+        let struct_fields = self.try_optional_consume_typed_list_with_seps(&[Ident])?;
+
+        // Check for closing right bracket for choice
+        let _choice_r_bracket = self.try_consume(&[RBracket])?;
+
+        Ok(ast::Declaration::new_choice(struct_name, struct_fields))
     }
 
     fn parse_function_declaration(&self) -> Result<ast::Declaration, ParserError> {
@@ -969,6 +1041,148 @@ impl Parser<'_> {
 
         Some(consumed_toks)
     }
+
+    fn try_optional_consume_list_with_seps(
+        &self,
+        valid_tokens: &[TokenKind],
+    ) -> Result<Option<Vec<Token>>, ParserError> {
+        // Fetch next token in stream
+        let mut curr_tok = self.peek().unwrap();
+
+        // See if the next token even corresponds to what we expect.
+        // NOTE: it is OK to not find a match since lists can be empty!
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
+        {
+            return Ok(None);
+        }
+
+        // Accumulate tokens that we consume based on `expected_token`s
+        let mut consumed_toks = Vec::new();
+        let mut expected_sep = false;
+        while valid_tokens.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
+        {
+            // Skip separators if we expect them
+            if curr_tok.is_a(TokenKind::Sep) && expected_sep
+            {
+                self.advance_parser_pos();
+                curr_tok = self.peek().unwrap();
+
+                // Next token should not be a separator
+                expected_sep = false;
+                continue;
+            }
+
+            // error detected -- Missing comma in list
+            if !curr_tok.is_a(TokenKind::Sep) && expected_sep
+            {
+                // Fancy compiler error
+                ParserErrorReporter::missing_sep(
+                    &curr_tok.get_token_kind(),
+                    self.path.to_str().unwrap(),
+                    self.cleaned_source,
+                    curr_tok.get_file_index(),
+                );
+            }
+
+            // error detected -- Erroneous comma found in list
+            if curr_tok.is_a(TokenKind::Sep) && !expected_sep
+            {
+                // Fancy compiler error
+                ParserErrorReporter::unexpected_token(
+                    &curr_tok.get_token_kind(),
+                    valid_tokens.into(),
+                    self.path.to_str().unwrap(),
+                    self.cleaned_source,
+                    curr_tok.get_file_index(),
+                );
+            }
+
+            consumed_toks.push(curr_tok);
+
+            // Move parser index to next token
+            self.advance_parser_pos();
+
+            // Fetch next token
+            curr_tok = self.peek().unwrap();
+
+            // Next token should be a comma seperator
+            expected_sep = true;
+        }
+
+        Ok(Some(consumed_toks))
+    }
+
+    fn try_optional_consume_typed_list_with_seps(
+        &self,
+        valid_tokens: &[TokenKind],
+    ) -> Result<Option<Vec<Token>>, ParserError> {
+        // Fetch next token in stream
+        let mut curr_tok = self.peek().unwrap();
+
+        // See if the next token even corresponds to what we expect.
+        // NOTE: it is OK to not find a match since lists can be empty!
+        if !valid_tokens.contains(&curr_tok.get_token_kind())
+        {
+            return Ok(None);
+        }
+
+        // Accumulate tokens that we consume based on `expected_token`s
+        let mut consumed_toks = Vec::new();
+        let mut expected_sep = false;
+        while valid_tokens.contains(&curr_tok.get_token_kind()) || curr_tok.is_a(TokenKind::Sep)
+        {
+            // Skip separators if we expect them
+            if curr_tok.is_a(TokenKind::Sep) && expected_sep
+            {
+                self.advance_parser_pos();
+                curr_tok = self.peek().unwrap();
+
+                // Next token should not be a separator
+                expected_sep = false;
+                continue;
+            }
+
+            // error detected -- Missing comma in list
+            if !curr_tok.is_a(TokenKind::Sep) && expected_sep
+            {
+                // Fancy compiler error
+                ParserErrorReporter::missing_sep(
+                    &curr_tok.get_token_kind(),
+                    self.path.to_str().unwrap(),
+                    self.cleaned_source,
+                    curr_tok.get_file_index(),
+                );
+            }
+
+            // error detected -- Erroneous comma found in list
+            if curr_tok.is_a(TokenKind::Sep) && !expected_sep
+            {
+                // Fancy compiler error
+                ParserErrorReporter::unexpected_token(
+                    &curr_tok.get_token_kind(),
+                    valid_tokens.into(),
+                    self.path.to_str().unwrap(),
+                    self.cleaned_source,
+                    curr_tok.get_file_index(),
+                );
+            }
+
+            consumed_toks.push(curr_tok);
+
+            // Move parser index to next token
+            self.advance_parser_pos();
+
+            // Fetch next token
+            curr_tok = self.peek().unwrap();
+
+            // Next token should be a comma seperator
+            expected_sep = true;
+        }
+
+        Ok(Some(consumed_toks))
+    }
+
+
 }
 
 #[cfg(test)]

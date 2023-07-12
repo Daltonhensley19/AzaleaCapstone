@@ -1,12 +1,10 @@
-add_two :: (int, int) -> int
-add_two n1 n2 = {
-    3 
+
+structure Dog {
+    age :: int,
+    name text
 }
 
 main :: () -> int
 main = {
-    let x <- 3;
-    x <- 2;
 
-    x
 }

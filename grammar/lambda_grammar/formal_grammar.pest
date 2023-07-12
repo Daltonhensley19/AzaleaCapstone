@@ -86,7 +86,7 @@ ident_list = { ident ~ ("," ~ ident)*  ~ ","? }
 
 // Comma seperated typed-idents
 typed_ident_list = { typed_ident ~ ("," ~ typed_ident)* ~ ","? }
-typed_ident      = { ident ~ type_qualifier ~ type }
+typed_ident      = { ident ~ type_qualifier ~ type}
 
 
 

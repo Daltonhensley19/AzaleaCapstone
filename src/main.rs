@@ -1,6 +1,7 @@
 use std::{io::Read, path::Path};
 
 
+use fuzzer::{XORShiftState, Fuzzer};
 use lexer::lexer::Lexer;
 use parser::Parser;
 use preprocessor::preprocessor::Preprocessor;
@@ -23,6 +24,14 @@ fn main() -> anyhow::Result<()> {
     // Read source file content as a `String`
     let path: &str = "source_test.txt";
     let source_content = source_file_to_string(path)?;
+
+    // Create `Fuzzer` and load it with the source file
+    #[cfg(feature = "fuzz")]
+    let seed = 2;
+    #[cfg(feature = "fuzz")]
+    let mut fuzzer = Fuzzer::new(source_content, XORShiftState::new(seed));
+    #[cfg(feature = "fuzz")]
+    let source_content = fuzzer.fuzz();
 
     // Create `Preprocessor` and load it with the source file
     let preprocessor = Preprocessor::new(source_content, path);

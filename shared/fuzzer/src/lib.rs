@@ -1,4 +1,3 @@
-#![feature(iterator_try_collect)]
 #![allow(unused)]
 
 use std::fs::File;
@@ -6,8 +5,16 @@ use std::io::{self, BufReader, Read};
 use std::{cell::Cell, path::Path};
 
 #[derive(Debug)]
-struct XORShiftState {
+pub struct XORShiftState {
     val: Cell<usize>,
+}
+
+impl XORShiftState {
+    pub fn new(seed: usize) -> Self {
+        Self {
+            val: seed.into()
+        }
+    }
 }
 
 // Random number generator based on a seeded value
@@ -47,7 +54,7 @@ fn rand_between(min: usize, max: usize, state: &mut XORShiftState) -> usize {
 }
 
 #[derive(Debug)]
-struct Fuzzer {
+pub struct Fuzzer {
     // Raw bytes into a file.
     file_raw: Vec<u8>,
 
@@ -56,21 +63,19 @@ struct Fuzzer {
 }
 
 impl Fuzzer {
-    fn new<P: AsRef<Path>>(path: P, rand_state: XORShiftState) -> io::Result<Self> {
-        let file = File::open(path)?;
+    pub fn new(file: String, rand_state: XORShiftState) -> Self {
 
-        let file_reader = BufReader::new(file);
 
-        Ok(Self {
-            file_raw: file_reader.bytes().try_collect()?,
+        Self {
+            file_raw: file.into_bytes(),
             rand_state,
-        })
+        }
     }
 
-    fn fuzz(&mut self) {
-        const MUT_COUNT: usize = 8;
+    pub fn fuzz(&mut self) -> String {
+        const MUT_COUNT: usize = 1;
 
-        for _ in 1..MUT_COUNT
+        for _ in 0..MUT_COUNT
         {
             // Get position in file that we will mutate
             let file_begin = 0;
@@ -81,6 +86,8 @@ impl Fuzzer {
             let rand_val = rand_between(0, 255, &mut self.rand_state) as u8;
             self.file_raw[mut_pos] = rand_val;
         }
+
+        dbg!(String::from_utf8_lossy(&self.file_raw).to_string())
     }
 }
 
@@ -96,12 +103,10 @@ mod tests {
             val: Cell::new(seed),
         };
 
-        let path = "fuzz_test.txt";
+        //let mut fuzzer = Fuzzer::new(file, xor_state)?;
+        //fuzzer.fuzz();
 
-        let mut fuzzer = Fuzzer::new(path, xor_state)?;
-        fuzzer.fuzz();
-
-        dbg!(fuzzer);
+        //dbg!(fuzzer);
 
         Ok(())
     }

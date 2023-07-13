@@ -12,3 +12,7 @@ lexer        = {path = "shared/lexer/"}
 parser       = {path = "shared/parser/"}
 anyhow       = "1.0.71"
 indicatif = "0.17.5"
+
+
+[features]
+fuzz = []

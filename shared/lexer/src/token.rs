@@ -42,6 +42,8 @@ pub enum TokenKind {
     MainKw,
     AsKw,
     LetKw,
+    EOF
+
 }
 
 impl From<TokenKind> for &str {
@@ -82,6 +84,7 @@ impl From<TokenKind> for &str {
             TokenKind::MainKw => "main",
             TokenKind::AsKw => "as",
             TokenKind::LetKw => "let",
+            TokenKind::EOF => "$$"
         }
     }
 }

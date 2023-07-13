@@ -303,21 +303,7 @@ impl Parser<'_> {
     /// `advance_parser_pos()` moves the parser's position index by one.
     fn advance_parser_pos(&self) {
         // Make sure we do not increment passed the size of a `usize`
-        let new_pos = self.pos.get().saturating_add(1);
-
-        self.pos.set(new_pos);
-    }
-
-    fn increment_parser_pos_by(&self, incre: usize) {
-        // Make sure we do not increment passed the size of a `usize`
-        let new_pos = self.pos.get().saturating_add(incre);
-
-        self.pos.set(new_pos);
-    }
-
-   fn decrement_parser_pos_by(&self, decre: usize) {
-        // Make sure we do not decrment passed the size of a `usize`
-        let new_pos = self.pos.get().saturating_sub(decre);
+        let new_pos = self.pos.get() + 1;
 
         self.pos.set(new_pos);
     }
@@ -353,47 +339,21 @@ impl Parser<'_> {
                 break 'parse_decls;
             }
 
-            // Try to get the name of the declaration
-            let curr_token = self.try_consume(&[Ident]);
+            // See what the declaration starts with to determine what it is
+            let curr_token = self.try_peek(&[Ident, StructKw, ChoiceKw]);
 
             if curr_token.is_err() && declarations.is_empty()
             {
                 return Ok(None);
             }
 
-            let name_token = curr_token.unwrap();
+            let curr_token = curr_token.unwrap();
 
-            let declaration = match name_token.get_token_kind()
+            let declaration = match curr_token.get_token_kind()
             {
-                Ident =>  {
-                    let _decl_t_qualifier = self.try_consume(&[TQualifer])?;
-
-                    // `LParn` if the start of a function declaration
-                    let decl_tok = self.try_consume(&[StructKw, ChoiceKw, LParn])?;
-
-                    if decl_tok.is_a(StructKw) 
-                    {
-                        // Reposition stream position 
-                        self.decrement_parser_pos_by(3);
-
-                        self.parse_struct_declaration()?
-                    }
-                    else if decl_tok.is_a(ChoiceKw)
-                    {
-                         // Reposition stream position 
-                        self.decrement_parser_pos_by(3);
-
-                        self.parse_choice_declaration()?
-                    }
-                    else 
-                    {
-                        // Reposition stream position 
-                        self.decrement_parser_pos_by(3);
-
-                        self.parse_function_declaration()?
-                    }
-                },
-                
+                Ident => self.parse_function_declaration()?,
+                ChoiceKw => self.parse_choice_declaration()?,
+                StructKw => self.parse_struct_declaration()?,
                 // @todo: Add support for `struct` and `choice` decls
                 _ => break 'parse_decls,
             };
@@ -407,14 +367,11 @@ impl Parser<'_> {
     fn parse_choice_declaration(&self) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
 
-        // Get choice name 
-        let choice_name = self.try_consume(&[Ident])?;
-
-        // Check for TQualifier
-        let _choice_t_qualifier = self.try_consume(&[TQualifer])?;
-
-        // Check for choicekw 
+        // Check for choice keyword
         let _choice_kw = self.try_consume(&[ChoiceKw])?;
+
+        // Get name of choice
+        let choice_name = self.try_consume(&[Ident])?;
 
         // Check for opening left bracket for choice
         let _choice_l_bracket = self.try_consume(&[LBracket])?;
@@ -430,23 +387,22 @@ impl Parser<'_> {
 
     fn parse_struct_declaration(&self) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
-
-        // Get structure name 
+  // Get name of structure
         let struct_name = self.try_consume(&[Ident])?;
-
-        // Check for TQualifier
+        
+        // Check for type qualifier 
         let _struct_t_qualifier = self.try_consume(&[TQualifer])?;
 
-        // Check for structkw 
+        // Check for structure keyword
         let _struct_kw = self.try_consume(&[StructKw])?;
- 
-        // Check for opening left bracket for structure (i.e. `{`)
+
+              // Check for opening left bracket for structure
         let _struct_l_bracket = self.try_consume(&[LBracket])?;
 
-        // Get structure fields (i.e. `age :: int, name :: text`)
+        // Get structure fields
         let struct_fields = self.try_optional_consume_typed_list_with_seps()?;
 
-        // Check for closing right bracket for structure (i.e. `}`)
+        // Check for closing right bracket for structure
         let _struct_r_bracket = self.try_consume(&[RBracket])?;
 
         Ok(ast::Declaration::new_struct(struct_name, struct_fields))
@@ -638,6 +594,8 @@ impl Parser<'_> {
     fn parse_expression(&self) -> Result<Option<ast::Expression>, ParserError> {
         let term = self.parse_term()?;
         let other = self.parse_other_term()?;
+
+        println!("MOOSE: {term:?}");
 
         if term.is_none()
         {
@@ -850,7 +808,7 @@ impl Parser<'_> {
         // Check for right bracket for block (i.e. `}`)
         let _main_r_bracket = self.try_consume(&[RBracket])?;
 
-        let _eof = self.try_consume(&[EOF])?;
+        dbg!(&main_block);
 
         Ok(ast::MainDefinition::new(
             main_definition_name,

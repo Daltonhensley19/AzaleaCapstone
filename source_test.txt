@@ -1,8 +1,21 @@
-
-structure Dog {
+Dog :: structure {
     age :: int,
-    name text
+    name ::  int
 }
+
+
+Color :: choice {
+    Red, 
+    Green,
+    Blue
+}
+
+add_two :: (int, int) -> int
+add_two n1 n2 = {
+    let x <- 3 + 2;
+    x
+}
+
 
 main :: () -> int
 main = {

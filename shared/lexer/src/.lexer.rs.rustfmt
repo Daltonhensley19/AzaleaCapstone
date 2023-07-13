@@ -802,23 +802,8 @@ impl Lexer {
                 let span_end   = last_token.span_end_ref().to_owned();
                 let file_index = last_token.get_file_index();
                 let is_reserved = false;
-
                let mut eof_tok = Token::new("$$".to_owned(), TokenKind::EOF, span_start, span_end, file_index, is_reserved);
-
-               tokens.push(eof_tok);
             }
-            else 
-            {
-                let span_start = SpanPoint::default(); 
-                let span_end   = SpanPoint::default();
-                let file_index = 0;
-                let is_reserved = false;
-
-               let mut eof_tok = Token::new("$$".to_owned(), TokenKind::EOF, span_start, span_end, file_index, is_reserved);
-
-               tokens.push(eof_tok);
-            }
-
 
             Ok(tokens)
         }

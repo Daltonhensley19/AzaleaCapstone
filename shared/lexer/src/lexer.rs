@@ -791,9 +791,13 @@ impl Lexer {
         // Otherwise, return Err to avoid giving user incorrect output.
         if !self.found_error
         {
-            // Append EOF token at the end of the token stream
+            // Append EOF token at the end of the token stream to know when to end the later
+            // parsing stage.
             let last_token = tokens.last();
 
+            // If we have at least one token in the token stream, then just use the span location
+            // of that for the EOF token. Otherwise, just set span location of EOF token to start
+            // of file. 
             if last_token.is_some()
             {
                 let last_token = last_token.unwrap();

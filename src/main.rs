@@ -1,7 +1,6 @@
 use std::{io::Read, path::Path};
 
-
-use fuzzer::{XORShiftState, Fuzzer};
+use fuzzer::{Fuzzer, XORShiftState};
 use lexer::lexer::Lexer;
 use parser::Parser;
 use preprocessor::preprocessor::Preprocessor;
@@ -20,18 +19,23 @@ fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
     Ok(content)
 }
 
-fn main() -> anyhow::Result<()> {
+fn run_fuzzer(source_content: String) -> String {
+    // Create `Fuzzer` and load it with the source file
+    let seed = 2;
+    let mut fuzzer = Fuzzer::new(source_content, XORShiftState::new(seed));
+    let source_content = fuzzer.fuzz();
+
+    source_content
+}
+
+fn run_compiler() -> anyhow::Result<()> {
     // Read source file content as a `String`
     let path: &str = "source_test.txt";
     let source_content = source_file_to_string(path)?;
 
-    // Create `Fuzzer` and load it with the source file
+    // Fuzz the source code if "fuzz" feature is enabled
     #[cfg(feature = "fuzz")]
-    let seed = 2;
-    #[cfg(feature = "fuzz")]
-    let mut fuzzer = Fuzzer::new(source_content, XORShiftState::new(seed));
-    #[cfg(feature = "fuzz")]
-    let source_content = fuzzer.fuzz();
+    let source_content = run_fuzzer(source_content);
 
     // Create `Preprocessor` and load it with the source file
     let preprocessor = Preprocessor::new(source_content, path);
@@ -39,10 +43,10 @@ fn main() -> anyhow::Result<()> {
     // Remove comments from source file and return a cleaned version
     println!("[1/4] Preprocessing source...");
     let cleaned_source = preprocessor
+        .normalize_to_ascii()?
         .remove_multiline_comment()?
         .remove_singleline_comments()
         .get_cleaned_sources();
-
 
     // Create `Lexer`
     let mut lexer = Lexer::new(path, &cleaned_source);
@@ -60,6 +64,13 @@ fn main() -> anyhow::Result<()> {
     let ast = parser.parse();
 
     println!("{ast:#?}");
+
+    Ok(())
+}
+
+fn main() -> anyhow::Result<()> {
+    // Run the Morehead Lambda Compiler
+    run_compiler()?;
 
     Ok(())
 }

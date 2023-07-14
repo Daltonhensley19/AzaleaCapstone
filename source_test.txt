@@ -3,7 +3,6 @@ Dog :: structure {
     name ::  int
 }
 
-
 Color :: choice {
     Red, 
     Green,
@@ -15,7 +14,6 @@ add_two n1 n2 = {
     let x <- 3 + 2;
     x
 }
-
 
 main :: () -> int
 main = {

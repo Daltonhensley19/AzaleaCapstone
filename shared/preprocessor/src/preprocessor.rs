@@ -1,14 +1,14 @@
 //! Defines the preprocessor for the Morehead Lambda Compiler.
 //!
-//! The preprocessor is responsible for stripping out C-style comments before 
+//! The preprocessor is responsible for stripping out C-style comments before
 //! sending the source file off to the lexer to be tokenized.
 
-use crate::errors::{PreprocessorError, ErrorReporter};
+use crate::errors::{ErrorReporter, PreprocessorError};
 
 // NOTE: In the future, `content` should be Vec<String> to process many files?
 // NOTE: In the future, `path` should be Vec<String> to process many files paths?
 #[derive(Default)]
-/// `Preprocessor` represents an API for cleaning up the source files to be 
+/// `Preprocessor` represents an API for cleaning up the source files to be
 /// processed by the compiler.
 pub struct Preprocessor {
     content: String,
@@ -143,10 +143,48 @@ impl Preprocessor {
         Ok(self)
     }
 
+    pub fn normalize_to_ascii(self) -> Result<Self, PreprocessorError> {
+        // Binding for readability
+        let content = &self.content;
+
+        const VALID_PUNC: &[&str] = &[
+            ";", ":", "_", ",", "(", ")", "{", "}", "+", "-", "*", "/", "%", "&", "|", "=", "<",
+            ">",
+        ];
+        const VALID_CONTROL: &[&str] = &["\n", "\t", "\r"];
+
+        // Loop through chars to see if any bad characters are in the source
+        // file.
+        let chars = content.chars().peekable();
+        for (file_offset, ch) in chars.enumerate()
+        {
+            if !VALID_CONTROL.contains(&ch.to_string().as_str())
+                && !ch.is_alphanumeric()
+                && !ch.is_whitespace()
+                && !VALID_PUNC.contains(&ch.to_string().as_str())
+            {
+                // Print pretty compiler error
+                ErrorReporter::bad_character(
+                    ch,
+                    self.path.as_ref(),
+                    self.content.as_ref(),
+                    file_offset,
+                );
+
+                // Just bail out of preprocessor
+                return Err(PreprocessorError::Failed(format!(
+                    "{path}",
+                    path = self.path
+                )));
+            }
+        }
+
+        Ok(self)
+    }
+
     /// Gets the cleaned up version of the source file.
     /// NOTE: Make sure you actually clean the file(s) first!
     pub fn get_cleaned_sources(mut self) -> String {
         std::mem::replace(&mut self.content, String::new())
     }
 }
-

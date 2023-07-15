@@ -32,8 +32,10 @@ statement = { var_bind ~ semicolon}
 var_bind  = { "let" ~ ident ~ assign ~ expression }
 
 // Expressions 
-expression = { term ~ (( plus | minus ) ~ term)* }
-term       = { factor ~ (( mul | div ) ~ factor)* }
+expression = { logical ~ (logic_op ~ logical)* }
+logical    = { compare ~ (compar_op ~ compare)* }
+compare    = { term ~ (term_op ~ term)* }
+term       = { factor ~ (fact_op ~ factor)* }
 factor     = { atom }
 
 // Atomic idents tokens
@@ -57,10 +59,24 @@ literal       = { num_literal | bool_literal }
 atom = { literal | ident | "(" ~ expression ~ ")" } 
 
 // Math operations
-plus  = { "+" }
-minus = { "-" }
-mul   = { "*" }
-div   = { "/" }
+term_op = { plus | minus }
+fact_op = { mul  | div }
+plus    = @{ "+" }
+minus   = @{ "-" }
+mul     = @{ "*" }
+div     = @{ "/" }
+
+// Logical operations 
+logic_op = { and | or }
+and      = @{ "and" }
+or       = @{ "or" }
+
+// Comparision operations 
+compar_op = { lt | lte | gt | gte } 
+lt        = @{ "<" }
+lte       = @{ "<=" }
+gt        = @{ ">" }
+gte       = @{ ">=" }
 
 // Types 
 type      = { primitive | adt }

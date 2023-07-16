@@ -3,6 +3,7 @@ use pest;
 use pest_derive::Parser;
 
 use pest::Parser;
+use pest_ascii_tree::*;
 
 #[derive(Parser)]
 #[grammar = "formal_grammar.pest"]
@@ -17,8 +18,9 @@ fn main() -> anyhow::Result<()> {
     // Test the grammar out on the test source file to see if the grammar works
     let tokens = LambdaParser::parse(Rule::source_file, content)?;
 
-    println!("{tokens:#?}");
-
+    let ascii_tree = into_ascii_tree(tokens)?;
+        
+    println!("{ascii_tree}");
 
     Ok(())
 }

@@ -137,29 +137,8 @@ mod ast {
     #[derive(Debug, new)]
     pub struct Program {
         declarations: Option<Vec<Declaration>>,
-        main: Main,
     }
-
-    #[derive(Debug, new)]
-    pub struct Main {
-        signature: MainSignature,
-        definition: MainDefinition,
-    }
-
-    #[derive(Debug, new)]
-    pub struct MainSignature {
-        name: Token,
-        ty_list: Option<Vec<Token>>,
-        ty_ret: Option<Token>,
-    }
-
-    #[derive(Debug, new)]
-    pub struct MainDefinition {
-        name: Token,
-        arg_list: Option<Vec<Token>>,
-        block: Block,
-    }
-
+    
     #[derive(Debug, new)]
     pub enum Declaration {
         Function {
@@ -333,9 +312,7 @@ impl Parser<'_> {
     pub fn parse(&self) -> Result<ast::Program, ParserError> {
         let declarations = self.parse_declarations()?;
 
-        let main = self.parse_main()?;
-
-        Ok(ast::Program::new(declarations, main))
+        Ok(ast::Program::new(declarations))
     }
 
     fn parse_declarations(&self) -> Result<Option<Vec<ast::Declaration>>, ParserError> {
@@ -345,16 +322,8 @@ impl Parser<'_> {
         // Loop to parse declarationa. Terminates
         'parse_decls: loop
         {
-            // Halt parsing declarations if we reach the end of the file
-            // or if we start parsing main
-            let at_main_token = self.optional_peek(&[MainKw]).is_some();
-            if self.at_end_of_token_stream() || at_main_token
-            {
-                break 'parse_decls;
-            }
-
             // Try to get the name of the declaration
-            let curr_token = self.try_consume(&[Ident]);
+            let curr_token = self.try_consume(&[Ident, MainKw, EOF]);
 
             if curr_token.is_err() && declarations.is_empty()
             {
@@ -363,9 +332,15 @@ impl Parser<'_> {
 
             let name_token = curr_token.unwrap();
 
+            // Escape if we reach EOF token
+            if name_token.is_a(EOF)
+            {
+                break 'parse_decls; 
+            }
+
             let declaration = match name_token.get_token_kind()
             {
-                Ident =>  {
+                Ident | MainKw =>  {
                     let _decl_t_qualifier = self.try_consume(&[TQualifer])?;
 
                     // `LParn` if the start of a function declaration
@@ -466,7 +441,7 @@ impl Parser<'_> {
         use TokenKind::*;
 
         // Get name of function (e.g identifier)
-        let func_name = self.try_consume(&[Ident])?;
+        let func_name = self.try_consume(&[Ident, MainKw])?;
 
         // See if TQualifier is given (e.g `::`) and ignore
         let _func_t_qualifier = self.try_consume(&[TQualifer])?;
@@ -496,7 +471,7 @@ impl Parser<'_> {
         use TokenKind::*;
 
         // Get name of function (e.g identifier)
-        let func_name = self.try_consume(&[Ident])?;
+        let func_name = self.try_consume(&[Ident, MainKw])?;
 
         // Get function parameters (e.g identifiers). Can omit entirely.
         let func_params = self.optional_consume_list(&[Ident]);
@@ -785,80 +760,7 @@ impl Parser<'_> {
             _ => Ok(None),
         }
     }
-
-    fn parse_main(&self) -> Result<ast::Main, ParserError> {
-        let main_signature = self.parse_main_signature()?;
-        let main_definition = self.parse_main_definition()?;
-
-        Ok(ast::Main::new(main_signature, main_definition))
-    }
-
-    fn parse_main_signature(&self) -> Result<ast::MainSignature, ParserError> {
-        use TokenKind::*;
-
-        // Name of main should always be `MainKw`
-        let main_signature_name = self.try_consume(&[MainKw])?;
-
-        // Check for type qualifier
-        let _main_t_qual = self.try_consume(&[TQualifer])?;
-
-        // Check for `(`
-        let _main_l_parn = self.try_consume(&[LParn])?;
-
-        // @todo: Add support for ADTs in function input types
-        let types = &[
-            // TokenKind::Adt,
-            IntTy, BoolTy, TextTy, FloatTy,
-        ];
-
-        // Input types of main
-        let input_arg_tys = self.optional_consume_list(types);
-
-        // Check for `)`
-        let _main_r_parn = self.try_consume(&[RParn])?;
-
-        // Get the return type of main
-        let (_ret_arrow_op, ret_ty) = self.try_consume2_or_none(&[RetArrow], types)?;
-
-        print!("{ret_ty:?}");
-
-        Ok(ast::MainSignature::new(
-            main_signature_name,
-            input_arg_tys,
-            ret_ty,
-        ))
-    }
-
-    fn parse_main_definition(&self) -> Result<ast::MainDefinition, ParserError> {
-        use TokenKind::*;
-
-        // Name of main definition should always be `MainKw`
-        let main_definition_name = self.try_consume(&[MainKw])?;
-
-        // Get actual `Ident` parameters for main
-        let main_input_parms = self.optional_consume_list(&[Ident]);
-
-        // Check for function definition operator (i.e `=`)
-        let _main_def_op = self.try_consume(&[FnDef])?;
-
-        // Check for left bracket for block (i.e. `{`)
-        let _main_l_bracket = self.try_consume(&[LBracket])?;
-
-        // Get `Block` for main (i.e. statements and return expression)
-        let main_block = self.parse_block()?;
-
-        // Check for right bracket for block (i.e. `}`)
-        let _main_r_bracket = self.try_consume(&[RBracket])?;
-
-        let _eof = self.try_consume(&[EOF])?;
-
-        Ok(ast::MainDefinition::new(
-            main_definition_name,
-            main_input_parms,
-            main_block,
-        ))
-    }
-
+    
     fn try_consume_ty(&self) -> Result<Token, ParserError> {
         use TokenKind::*;
 

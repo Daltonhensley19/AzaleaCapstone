@@ -1,5 +1,5 @@
 [package]
-name    = "msc"
+name    = "mlc"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,7 +12,9 @@ lexer        = {path = "shared/lexer/"}
 parser       = {path = "shared/parser/"}
 anyhow       = "1.0.71"
 indicatif = "0.17.5"
+clap = { version = "4.3.14", features = ["derive"] }
 
 
 [features]
 fuzz = []
+color = []

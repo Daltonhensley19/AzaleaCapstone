@@ -5,6 +5,17 @@ use lexer::lexer::Lexer;
 use parser::Parser;
 use preprocessor::preprocessor::Preprocessor;
 
+use clap::Parser as ClapParser;
+
+/// Simple program to greet a person
+#[derive(ClapParser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Name of the path to the source file
+    #[arg(short, long)]
+    source_path: String,
+}
+
 fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
     // Open file using with a buffer
     let file = std::fs::File::open(path)?;
@@ -29,8 +40,11 @@ fn run_fuzzer(source_content: String) -> String {
 }
 
 fn run_compiler() -> anyhow::Result<()> {
+
+    let args = Args::parse();
+
     // Read source file content as a `String`
-    let path: &str = "source_test.txt";
+    let path: &str = args.source_path.as_str();
     let source_content = source_file_to_string(path)?;
 
     // Fuzz the source code if "fuzz" feature is enabled

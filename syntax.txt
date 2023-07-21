@@ -18,7 +18,7 @@ addTwo n1 n2 = {
 }
 
 structure Dog {
-    name :: text,
+    name :: text,X1
     age :: int, 
 }
 

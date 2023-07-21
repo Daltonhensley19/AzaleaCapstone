@@ -1,26 +1,7 @@
 main :: () 
 main = {
     
-    let x <- -2;
+    let x <- !2 - 1;
 
-}
-
-main :: () 
-main = {
-    
-    let x <- -2 == -2;
-
-}
-
-
-Color :: choice {
-    Red, 
-    Green,
-    Blue
-}
-
-Dog :: structure {
-    age :: int, 
-    name :: text
 }
 

@@ -1,9 +1,5 @@
-main :: () -> int
+main :: ()
 main = {
-    let x <- 2;
+    3 * !3
 }
 
-add_two :: (int, int) -> int
-add_two n1 n2 = {
-    n2 + n2
-}

@@ -46,6 +46,7 @@ fn run_compiler() -> anyhow::Result<()> {
     // Read source file content as a `String`
     let path: &str = args.source_path.as_str();
     let source_content = source_file_to_string(path)?;
+    
 
     // Fuzz the source code if "fuzz" feature is enabled
     #[cfg(feature = "fuzz")]
@@ -78,6 +79,7 @@ fn run_compiler() -> anyhow::Result<()> {
     let ast = parser.parse();
 
     println!("{ast:#?}");
+    
 
     Ok(())
 }

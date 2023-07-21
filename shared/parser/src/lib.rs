@@ -183,8 +183,27 @@ mod ast {
     pub enum Statement {
         VarBindingInit { bind_name: Token, expr: Expression },
         VarBindingMut { bind_name: Token, expr: Expression },
+        Selection { if_comp: IfComp, elif_comp: ElifComp, else_comp: ElseComp },
     }
 
+    #[derive(Debug, new)]
+    pub struct IfComp {
+        bool_expr: Expression,
+	block: Block
+    }
+    
+    #[derive(Debug, new)]
+    pub struct ElifComp {
+        bool_expr: Expression,
+	block: Block
+    }
+    
+    #[derive(Debug, new)]
+    pub struct ElseComp {
+        bool_expr: Expression,
+	block: Block
+    }
+    
     #[derive(Debug, new)]
     pub struct Expression {
         equal: Box<Option<Equal>>,

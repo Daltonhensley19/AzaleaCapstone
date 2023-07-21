@@ -1,5 +1,5 @@
 main :: ()
 main = {
-    let x <- !false == true; 
+    3 * !3
 }
 

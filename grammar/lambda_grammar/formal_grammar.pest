@@ -23,8 +23,16 @@ struct_kw          = { "structure" }
 block = { "{" ~ statement* ~ expression? ~ "}" }
 
 // Statement kinds
-statement = { var_bind ~ semicolon}
-var_bind  = { "let" ~ ident ~ assign ~ expression }
+statement = { ( var_bind | selection ) }
+
+// let bindings
+var_bind  = { "let" ~ ident ~ assign ~ expression ~ semicolon }
+
+// if-stmt control flow
+selection = { if_comp ~ elif_comp* ~ else_comp? }
+if_comp   = { "if" ~ expression ~ block }
+elif_comp = { "elif" ~ expression ~ block }
+else_comp = { "else" ~ block }
 
 // Expressions 
 expression = { equal }

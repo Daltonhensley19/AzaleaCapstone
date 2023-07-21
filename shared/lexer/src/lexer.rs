@@ -137,7 +137,7 @@ impl Lexer {
     fn peek(&self) -> Option<char> {
         // Get next char based on the lexer's position in the source file plus one
         let file_index = self.get_file_index() + 1;
-        let next_char = self.source_content.chars().nth(file_index);
+        let next_char  = self.source_content.chars().nth(file_index);
 
         next_char
     }
@@ -149,7 +149,7 @@ impl Lexer {
     /// Returns `Some` if we `peek_current` and find a char, `None` otherwise.
     fn peek_current(&mut self) -> Option<char> {
         // Get current char based on the lexer's position in the source file plus one
-        let file_index = self.get_file_index();
+        let file_index   = self.get_file_index();
         let current_char = self.source_content.chars().nth(file_index);
 
         // Make sure we throw an error if we detect invalid chars
@@ -179,7 +179,7 @@ impl Lexer {
     /// Returns `Some` if we `peek_previous` and find a char, `None` otherwise.
     fn peek_previous(&self) -> Option<char> {
         // Get previous char based on the lexer's position in the source file minus one
-        let file_index = self.get_file_index().saturating_sub(1);
+        let file_index   = self.get_file_index().saturating_sub(1);
         let current_char = self.source_content.chars().nth(file_index);
 
         current_char
@@ -382,6 +382,46 @@ impl Lexer {
             '{' => self.consume_one_chars('{', TokenKind::LBracket),
             '}' => self.consume_one_chars('}', TokenKind::RBracket),
             ',' => self.consume_one_chars(',', TokenKind::Sep),
+            // Special case
+	    '!' =>
+	    {
+		let next_char = self.peek().expect("Tried to peek pass EOF.");
+
+                if next_char == '='
+                {
+                    // Move to next position in file and get start and end span of current token
+                    self.incre_file_index_by(2);
+                    let (span_start, span_end) = self.get_span_start_and_end_with_offset(2);
+                    let file_index = self.get_file_index().saturating_sub(2);
+                    let is_reserved = false;
+
+                    return Some(Token::new(
+                        "!=".to_string(),
+                        TokenKind::NEq,
+                        span_start,
+                        span_end,
+                        file_index,
+                        is_reserved,
+                    ));
+                }
+                else 
+                {
+                    // Move to next position in file and get start and end span of current token
+                    self.incre_file_index_by(1);
+                    let (span_start, span_end) = self.get_span_start_and_end_with_offset(1);
+                    let file_index = self.get_file_index().saturating_sub(1);
+                    let is_reserved = false;
+
+                    return Some(Token::new(
+                        "!".to_string(),
+                        TokenKind::Not,
+                        span_start,
+                        span_end,
+                        file_index,
+                        is_reserved,
+                    ));
+                }
+	    }
             // Special case
             '<' =>
             {

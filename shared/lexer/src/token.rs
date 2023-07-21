@@ -28,6 +28,8 @@ pub enum TokenKind {
     Gt,
     Gte,
     Eq,
+    NEq,
+    Not,
     RecordDot,
     ExRange,
     LParn,
@@ -84,6 +86,8 @@ impl From<TokenKind> for &str {
             TokenKind::MainKw => "main",
             TokenKind::AsKw => "as",
             TokenKind::LetKw => "let",
+	    TokenKind::NEq => "!=",
+	    TokenKind::Not => "!",
             TokenKind::EOF => "$$"
         }
     }

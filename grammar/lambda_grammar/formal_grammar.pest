@@ -23,7 +23,7 @@ struct_kw          = { "structure" }
 block = { "{" ~ statement* ~ expression? ~ "}" }
 
 // Statement kinds
-statement = { ( var_bind | selection | indefinite_loop ) }
+statement = { ( var_bind | selection | indefinite_loop | definite_loop ) }
 
 // let bindings
 var_bind  = { "let" ~ ident ~ assign ~ expression ~ semicolon }
@@ -36,6 +36,9 @@ else_comp = { "else" ~ block }
 
 // While-loop control flow
 indefinite_loop = { "while" ~ expression ~ block }
+
+// for-loop control flow
+definite_loop = { "for" ~ ident ~ "in" ~ int_literal ~ ".." ~ int_literal ~ block }
 
 // Expressions 
 expression = { equal }

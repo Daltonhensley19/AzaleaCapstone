@@ -220,8 +220,14 @@ mod ast {
             elif_comp: Option<ElifComp>,
             else_comp: Option<ElseComp>,
         },
-	IndefiniteLoop{
+	IndefiniteLoop {
 	    expr: Expression,
+	    block: Block
+	},
+	DefiniteLoop {
+	    index_name: Token,
+	    low_bound: Token,
+	    high_bound: Token,
 	    block: Block
 	}
     }
@@ -598,6 +604,7 @@ impl Parser<'_> {
             // `Ident` is allowed since we could be parsing `VarBindingMut`.
             let curr_token = self.optional_peek(&[IfKw,
 						  WhileKw,
+						  ForKw,
 						  LetKw,
 						  StructKw,
 						  ChoiceKw,
@@ -623,6 +630,7 @@ impl Parser<'_> {
                 LetKw => self.parse_var_binding_init()?,
                 IfKw => self.parse_selection()?,
                 WhileKw => self.parse_indefinite_loop()?,
+                ForKw => self.parse_definite_loop()?,
                 // Parse `VarBindingMut` if current is `Ident` and next is `<-`
                 Ident if self.optional_peek_next(&[Assign]).is_some() =>
                 {
@@ -640,6 +648,23 @@ impl Parser<'_> {
         Ok(Some(statements))
     }
 
+    fn parse_definite_loop(&self) -> Result<ast::Statement, ParserError> {
+	use TokenKind::*;
+
+	// Parse for-loop
+        let _for_kw        = self.try_consume(&[ForKw])?;
+        let for_index      = self.try_consume(&[Ident])?;
+        let _in_kw         = self.try_consume(&[InKw])?;
+        let for_low_bound  = self.try_consume(&[NumLit])?;
+        let _for_range     = self.try_consume(&[ExRange])?;
+        let for_high_bound = self.try_consume(&[NumLit])?;
+	let _open_block    = self.try_consume(&[LBracket])?;
+	let for_block      = self.parse_block()?;
+	let _close_block   = self.try_consume(&[RBracket])?;
+
+        Ok(ast::Statement::new_definite_loop(for_index, for_low_bound, for_high_bound, for_block))
+    }
+    
     fn parse_indefinite_loop(&self) -> Result<ast::Statement, ParserError> {
 	use TokenKind::*;
 

@@ -44,6 +44,11 @@ pub enum TokenKind {
     MainKw,
     AsKw,
     LetKw,
+    IfKw,
+    ElifKw,
+    ElseKw,
+    ForKw,
+    WhileKw,
     EOF
 
 }
@@ -86,6 +91,11 @@ impl From<TokenKind> for &str {
             TokenKind::MainKw => "main",
             TokenKind::AsKw => "as",
             TokenKind::LetKw => "let",
+            TokenKind::IfKw => "if",
+            TokenKind::ElifKw => "elif",
+            TokenKind::ElseKw => "else",
+            TokenKind::WhileKw => "while",
+            TokenKind::ForKw => "for",
 	    TokenKind::NEq => "!=",
 	    TokenKind::Not => "!",
             TokenKind::EOF => "$$"
@@ -106,6 +116,11 @@ impl TokenKind {
             ("main", TokenKind::MainKw),
             ("as", TokenKind::AsKw),
             ("let", TokenKind::LetKw),
+            ("if", TokenKind::IfKw),
+            ("elif", TokenKind::ElifKw),
+            ("else", TokenKind::ElseKw),
+            ("while", TokenKind::WhileKw),
+            ("for", TokenKind::ForKw),
             ("true", TokenKind::BoolLit),
             ("false", TokenKind::BoolLit),
 

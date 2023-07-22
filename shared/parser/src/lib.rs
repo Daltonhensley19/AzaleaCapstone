@@ -5,6 +5,7 @@
 
 use std::{cell::Cell, path::Path};
 
+use ast::ElseComp;
 use lexer::token::{Token, TokenKind};
 
 use ariadne::{Label, Report, ReportKind, Source};
@@ -138,7 +139,7 @@ mod ast {
     pub struct Program {
         declarations: Option<Vec<Declaration>>,
     }
-    
+
     #[derive(Debug, new)]
     pub enum Declaration {
         Function {
@@ -181,35 +182,44 @@ mod ast {
 
     #[derive(Debug, new)]
     pub enum Statement {
-        VarBindingInit { bind_name: Token, expr: Expression },
-        VarBindingMut { bind_name: Token, expr: Expression },
-        Selection { if_comp: IfComp, elif_comp: ElifComp, else_comp: ElseComp },
+        VarBindingInit {
+            bind_name: Token,
+            expr: Expression,
+        },
+        VarBindingMut {
+            bind_name: Token,
+            expr: Expression,
+        },
+        Selection {
+            if_comp: IfComp,
+            elif_comp: Option<ElifComp>,
+            else_comp: Option<ElseComp>,
+        },
     }
 
     #[derive(Debug, new)]
     pub struct IfComp {
         bool_expr: Expression,
-	block: Block
+        block: Block,
     }
-    
+
     #[derive(Debug, new)]
     pub struct ElifComp {
         bool_expr: Expression,
-	block: Block
+        block: Block,
     }
-    
+
     #[derive(Debug, new)]
     pub struct ElseComp {
-        bool_expr: Expression,
-	block: Block
+        block: Block,
     }
-    
+
     #[derive(Debug, new)]
     pub struct Expression {
         equal: Box<Option<Equal>>,
         // other: Option<Vec<(EqualOp, Equal)>>,
     }
-    
+
     #[derive(Debug, new)]
     pub struct Equal {
         compare: Option<Compare>,
@@ -221,7 +231,7 @@ mod ast {
         term: Option<Term>,
         other: Option<Vec<(CompareOp, Term)>>,
     }
-    
+
     #[derive(Debug, new)]
     pub struct Term {
         factor: Option<Factor>,
@@ -239,12 +249,12 @@ mod ast {
         unary: Option<Unary>,
         other: Option<Vec<(FactOp, Unary)>>,
     }
-    
+
     #[derive(Debug, new)]
     pub struct Unary {
-        atom: Option<(Option<Vec<UnaryOp>>, Atom)>
+        atom: Option<(Option<Vec<UnaryOp>>, Atom)>,
     }
-    
+
     #[derive(Debug, new)]
     pub enum Atom {
         Token(Token),
@@ -252,7 +262,7 @@ mod ast {
         // `(` Expr `)`
         Expression(Option<Expression>),
     }
-    
+
     #[derive(Debug, new)]
     // `== | `!=`
     pub struct EqualOp(Token);
@@ -260,7 +270,7 @@ mod ast {
     #[derive(Debug, new)]
     // `<=` | `<` | `>` | `>=`
     pub struct CompareOp(Token);
-    
+
     #[derive(Debug, new)]
     // `+` | `-`
     pub struct TermOp(Token);
@@ -270,9 +280,8 @@ mod ast {
     pub struct FactOp(Token);
 
     #[derive(Debug, new)]
-    // `!` 
+    // `!`
     pub struct UnaryOp(Token);
-
 }
 
 pub struct Parser<'parser> {
@@ -305,7 +314,7 @@ impl Parser<'_> {
     /// index `pos`.
     fn peek(&self) -> Option<Token> {
         let curr_tok_pos = &self.pos;
-	
+
         let tok = self.tokens.get(curr_tok_pos.get()).clone();
 
         tok.cloned()
@@ -344,7 +353,7 @@ impl Parser<'_> {
         self.pos.set(new_pos);
     }
 
-   fn decrement_parser_pos_by(&self, decre: usize) {
+    fn decrement_parser_pos_by(&self, decre: usize) {
         // Make sure we do not decrment passed the size of a `usize`
         let new_pos = self.pos.get().saturating_sub(decre);
 
@@ -385,40 +394,41 @@ impl Parser<'_> {
             // Escape if we reach EOF token
             if name_token.is_a(EOF)
             {
-                break 'parse_decls; 
+                break 'parse_decls;
             }
 
             let declaration = match name_token.get_token_kind()
             {
-                Ident | MainKw =>  {
+                Ident | MainKw =>
+                {
                     let _decl_t_qualifier = self.try_consume(&[TQualifer])?;
 
                     // `LParn` if the start of a function declaration
                     let decl_tok = self.try_consume(&[StructKw, ChoiceKw, LParn])?;
 
-                    if decl_tok.is_a(StructKw) 
+                    if decl_tok.is_a(StructKw)
                     {
-                        // Reposition stream position 
+                        // Reposition stream position
                         self.decrement_parser_pos_by(3);
 
                         self.parse_struct_declaration()?
                     }
                     else if decl_tok.is_a(ChoiceKw)
                     {
-                         // Reposition stream position 
+                        // Reposition stream position
                         self.decrement_parser_pos_by(3);
 
                         self.parse_choice_declaration()?
                     }
-                    else 
+                    else
                     {
-                        // Reposition stream position 
+                        // Reposition stream position
                         self.decrement_parser_pos_by(3);
 
                         self.parse_function_declaration()?
                     }
-                },
-                
+                }
+
                 // @todo: Add support for `struct` and `choice` decls
                 _ => break 'parse_decls,
             };
@@ -432,13 +442,13 @@ impl Parser<'_> {
     fn parse_choice_declaration(&self) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
 
-        // Get choice name 
+        // Get choice name
         let choice_name = self.try_consume(&[Ident])?;
 
         // Check for TQualifier
         let _choice_t_qualifier = self.try_consume(&[TQualifer])?;
 
-        // Check for choicekw 
+        // Check for choicekw
         let _choice_kw = self.try_consume(&[ChoiceKw])?;
 
         // Check for opening left bracket for choice
@@ -456,15 +466,15 @@ impl Parser<'_> {
     fn parse_struct_declaration(&self) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
 
-        // Get structure name 
+        // Get structure name
         let struct_name = self.try_consume(&[Ident])?;
 
         // Check for TQualifier
         let _struct_t_qualifier = self.try_consume(&[TQualifer])?;
 
-        // Check for structkw 
+        // Check for structkw
         let _struct_kw = self.try_consume(&[StructKw])?;
- 
+
         // Check for opening left bracket for structure (i.e. `{`)
         let _struct_l_bracket = self.try_consume(&[LBracket])?;
 
@@ -557,7 +567,7 @@ impl Parser<'_> {
         {
             // See what the statement starts with to determine what it is.
             // `Ident` is allowed since we could be parsing `VarBindingMut`.
-            let curr_token = self.optional_peek(&[LetKw, StructKw, ChoiceKw, Ident]);
+            let curr_token = self.optional_peek(&[IfKw, LetKw, StructKw, ChoiceKw, Ident]);
 
             // No statements to parse
             if curr_token.is_none() && statements.is_empty()
@@ -577,6 +587,7 @@ impl Parser<'_> {
             let statement = match curr_token.get_token_kind()
             {
                 LetKw => self.parse_var_binding_init()?,
+                IfKw => self.parse_selection()?,
                 // Parse `VarBindingMut` if current is `Ident` and next is `<-`
                 Ident if self.optional_peek_next(&[Assign]).is_some() =>
                 {
@@ -594,6 +605,79 @@ impl Parser<'_> {
         Ok(Some(statements))
     }
 
+    fn parse_selection(&self) -> Result<ast::Statement, ParserError> {
+        use TokenKind::*;
+
+	// Parse `if-comp` 
+	let if_comp = self.parse_if_comp()?;
+
+	// Parse `elif-comp` 
+        let elif_comp = self.parse_elif_comp()?;
+
+	// Parse `else-comp` 
+        let else_comp = self.parse_else_comp()?;
+
+        Ok(ast::Statement::new_selection(if_comp, elif_comp, else_comp))
+    }
+
+    fn parse_if_comp(&self) -> Result<ast::IfComp, ParserError> {
+	use TokenKind::*;
+
+	// Parse `if-comp`
+	let _if_kw       = self.try_consume(&[IfKw])?;
+        let if_expr      = self.parse_expression()?;
+	let _open_block  = self.try_consume(&[LBracket])?;
+        let if_block     = self.parse_block()?;
+	let _close_block = self.try_consume(&[RBracket])?;
+        let if_comp      = ast::IfComp::new(if_expr.expect("missing if-predicate"), if_block);
+
+	Ok(if_comp)
+    }
+
+    fn parse_elif_comp(&self) -> Result<Option<ast::ElifComp>, ParserError> {
+        use TokenKind::*;
+	
+	let _elif_kw = self.optional_peek(&[ElifKw]);
+
+	// No `elif` to parse
+	if _elif_kw.is_none()
+	{
+	    return Ok(None);
+	}
+
+	// Parse `elif-comp` 
+        let _elif_kw       = self.try_consume(&[ElifKw])?;
+        let elif_expr      = self.parse_expression()?;
+	let _open_block    = self.try_consume(&[LBracket])?;
+        let elif_block     = self.parse_block()?;
+	let _close_block   = self.try_consume(&[RBracket])?;
+        let elif_comp      = Some(ast::ElifComp::new(elif_expr.expect("missing elif-predicate"), elif_block));
+
+	Ok(elif_comp)
+    }
+
+    fn parse_else_comp(&self) -> Result<Option<ast::ElseComp>, ParserError> {
+        use TokenKind::*;
+	
+	let _else_kw = self.optional_peek(&[ElseKw]);
+
+	// No `else` to parse
+	if _else_kw.is_none()
+	{
+	    return Ok(None);
+	}
+
+	// Parse `else-comp` 
+        let _else_kw       = self.try_consume(&[ElseKw])?;
+	let _open_block    = self.try_consume(&[LBracket])?;
+        let else_block     = self.parse_block()?;
+	let _close_block   = self.try_consume(&[RBracket])?;
+        let else_comp      = Some(ast::ElseComp::new(else_block));
+
+	Ok(else_comp)
+    }
+
+    
     fn parse_var_binding_init(&self) -> Result<ast::Statement, ParserError> {
         use TokenKind::*;
 
@@ -673,17 +757,17 @@ impl Parser<'_> {
 
     fn parse_equal(&self) -> Result<Option<ast::Equal>, ParserError> {
         let compare = self.parse_compare()?;
-        let other   = self.parse_other_compare()?;
+        let other = self.parse_other_compare()?;
 
-	if compare.is_none()
-	{
-	    assert!(other.is_none());
-	    return Ok(None);
-	}
+        if compare.is_none()
+        {
+            assert!(other.is_none());
+            return Ok(None);
+        }
 
         Ok(Some(ast::Equal::new(compare, other)))
     }
-    
+
     fn parse_other_equal(&self) -> Result<Option<Vec<(ast::EqualOp, ast::Equal)>>, ParserError> {
         use TokenKind::*;
 
@@ -730,20 +814,21 @@ impl Parser<'_> {
     }
 
     fn parse_compare(&self) -> Result<Option<ast::Compare>, ParserError> {
-        let term    = self.parse_term()?;
-        let other   = self.parse_other_term()?;
+        let term = self.parse_term()?;
+        let other = self.parse_other_term()?;
 
-	if term.is_none()
-	{
-	    assert!(other.is_none());
-	    return Ok(None);
-	}
+        if term.is_none()
+        {
+            assert!(other.is_none());
+            return Ok(None);
+        }
 
         Ok(Some(ast::Compare::new(term, other)))
     }
 
- 
-    fn parse_other_compare(&self) -> Result<Option<Vec<(ast::EqualOp, ast::Compare)>>, ParserError> {
+    fn parse_other_compare(
+        &self,
+    ) -> Result<Option<Vec<(ast::EqualOp, ast::Compare)>>, ParserError> {
         use TokenKind::*;
 
         let mut other = Vec::new();
@@ -790,17 +875,17 @@ impl Parser<'_> {
 
     fn parse_term(&self) -> Result<Option<ast::Term>, ParserError> {
         let factor = self.parse_factor()?;
-        let other  = self.parse_other_factor()?;
+        let other = self.parse_other_factor()?;
 
-	if factor.is_none()
-	{
-	    assert!(other.is_none());
-	    return Ok(None);
-	}
+        if factor.is_none()
+        {
+            assert!(other.is_none());
+            return Ok(None);
+        }
 
         Ok(Some(ast::Term::new(factor, other)))
     }
-    
+
     fn parse_other_term(&self) -> Result<Option<Vec<(ast::CompareOp, ast::Term)>>, ParserError> {
         use TokenKind::*;
 
@@ -857,7 +942,7 @@ impl Parser<'_> {
 
         Ok(Some(ast::Factor::new(unary, other)))
     }
-    
+
     fn parse_unary(&self) -> Result<Option<ast::Unary>, ParserError> {
         let unary = self.parse_atom()?;
 
@@ -958,15 +1043,22 @@ impl Parser<'_> {
     fn parse_atom(&self) -> Result<Option<(Option<Vec<ast::UnaryOp>>, ast::Atom)>, ParserError> {
         use TokenKind::*;
 
-	// See if we have any `Not` tokens
-	let mut not_toks = Vec::new();
-	while let Some(not_tok) = self.optional_consume(&[Not])
-	{
-	    not_toks.push(ast::UnaryOp::new(not_tok));
-	}
+        // See if we have any `Not` tokens
+        let mut not_toks = Vec::new();
+        while let Some(not_tok) = self.optional_consume(&[Not])
+        {
+            not_toks.push(ast::UnaryOp::new(not_tok));
+        }
 
-	let not_toks = if not_toks.is_empty() { None } else { Some(not_toks) };
-	
+        let not_toks = if not_toks.is_empty()
+        {
+            None
+        }
+        else
+        {
+            Some(not_toks)
+        };
+
         // Get ident or literal for atom
         let curr_tok = self.optional_consume(&[Ident, NumLit, FloatLit, BoolLit, LParn]);
 
@@ -981,7 +1073,10 @@ impl Parser<'_> {
             LParn =>
             {
                 // Parse `(` `inner_expr` `)`
-                let inner_expr = Ok(Some((not_toks, ast::Atom::new_expression(self.parse_expression()?))));
+                let inner_expr = Ok(Some((
+                    not_toks,
+                    ast::Atom::new_expression(self.parse_expression()?),
+                )));
 
                 // Make sure that user remembers to close with `)`
                 let _ = self.try_consume(&[RParn])?;
@@ -995,7 +1090,7 @@ impl Parser<'_> {
             _ => Ok(None),
         }
     }
-    
+
     fn try_consume_ty(&self) -> Result<Token, ParserError> {
         use TokenKind::*;
 

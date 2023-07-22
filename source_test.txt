@@ -2,14 +2,14 @@ main :: ()
 main = {
     let x <- 1;
 
-    if x {
-        if y
-        {
-        
-        } 
-        else 
+    if x
+    {
+        while z != 2
         {
         }
+    }
+    elif z
+    {
     }
 }
 

@@ -45,6 +45,31 @@ impl ParserErrorReporter {
             .print((path, Source::from(source)))
             .unwrap();
     }
+    
+    pub fn missing_expr_at<'a>(
+        at: &str,
+        path: &str,
+        source: &str,
+        offset: usize,
+    ) {
+        let note = format!(
+            "Missing bool expression at {:?}",
+            at 
+        );
+        Report::build(ReportKind::Error, path, offset)
+            .with_code(0)
+            .with_message("Missing Expression (syntax error)")
+            .with_label(
+                Label::new((path, offset..offset))
+                    .with_message("Here")
+                    .with_color(ariadne::Color::Red),
+            )
+            .with_note(note)
+            .finish()
+            .print((path, Source::from(source)))
+            .unwrap();
+    }
+
 
     pub fn missing_ret_ty<'a>(
         unexpected: &TokenKind,
@@ -195,6 +220,10 @@ mod ast {
             elif_comp: Option<ElifComp>,
             else_comp: Option<ElseComp>,
         },
+	IndefiniteLoop{
+	    expr: Expression,
+	    block: Block
+	}
     }
 
     #[derive(Debug, new)]
@@ -567,7 +596,12 @@ impl Parser<'_> {
         {
             // See what the statement starts with to determine what it is.
             // `Ident` is allowed since we could be parsing `VarBindingMut`.
-            let curr_token = self.optional_peek(&[IfKw, LetKw, StructKw, ChoiceKw, Ident]);
+            let curr_token = self.optional_peek(&[IfKw,
+						  WhileKw,
+						  LetKw,
+						  StructKw,
+						  ChoiceKw,
+						  Ident]);
 
             // No statements to parse
             if curr_token.is_none() && statements.is_empty()
@@ -588,6 +622,7 @@ impl Parser<'_> {
             {
                 LetKw => self.parse_var_binding_init()?,
                 IfKw => self.parse_selection()?,
+                WhileKw => self.parse_indefinite_loop()?,
                 // Parse `VarBindingMut` if current is `Ident` and next is `<-`
                 Ident if self.optional_peek_next(&[Assign]).is_some() =>
                 {
@@ -603,6 +638,31 @@ impl Parser<'_> {
         }
 
         Ok(Some(statements))
+    }
+
+    fn parse_indefinite_loop(&self) -> Result<ast::Statement, ParserError> {
+	use TokenKind::*;
+
+	// Parse while-loop
+        let while_kw         = self.try_consume(&[WhileKw])?;
+	let Some(while_expr) = self.parse_expression()?
+	else
+	{
+	    // Fancy compiler error
+            ParserErrorReporter::missing_expr_at(
+		"while-loop",
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                while_kw.get_file_index(),
+            );
+
+	    return Err(ParserError::ParseFail);
+	};
+	let _open_block  = self.try_consume(&[LBracket])?;
+	let while_block  = self.parse_block()?;
+	let _close_block = self.try_consume(&[RBracket])?;
+
+        Ok(ast::Statement::new_indefinite_loop(while_expr, while_block))
     }
 
     fn parse_selection(&self) -> Result<ast::Statement, ParserError> {
@@ -624,12 +684,24 @@ impl Parser<'_> {
 	use TokenKind::*;
 
 	// Parse `if-comp`
-	let _if_kw       = self.try_consume(&[IfKw])?;
-        let if_expr      = self.parse_expression()?;
+	let if_kw         = self.try_consume(&[IfKw])?;
+        let Some(if_expr) = self.parse_expression()?
+	else
+	{
+	    // Fancy compiler error
+            ParserErrorReporter::missing_expr_at(
+		"if-branch",
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                if_kw.get_file_index(),
+            );
+
+	    return Err(ParserError::ParseFail);
+	};
 	let _open_block  = self.try_consume(&[LBracket])?;
         let if_block     = self.parse_block()?;
 	let _close_block = self.try_consume(&[RBracket])?;
-        let if_comp      = ast::IfComp::new(if_expr.expect("missing if-predicate"), if_block);
+        let if_comp      = ast::IfComp::new(if_expr, if_block);
 
 	Ok(if_comp)
     }
@@ -646,12 +718,24 @@ impl Parser<'_> {
 	}
 
 	// Parse `elif-comp` 
-        let _elif_kw       = self.try_consume(&[ElifKw])?;
-        let elif_expr      = self.parse_expression()?;
+        let elif_kw         = self.try_consume(&[ElifKw])?;
+        let Some(elif_expr) = self.parse_expression()?
+	else
+	{
+	    // Fancy compiler error
+            ParserErrorReporter::missing_expr_at(
+		"elif-branch",
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                elif_kw.get_file_index(),
+            );
+
+	    return Err(ParserError::ParseFail);
+	};
 	let _open_block    = self.try_consume(&[LBracket])?;
         let elif_block     = self.parse_block()?;
 	let _close_block   = self.try_consume(&[RBracket])?;
-        let elif_comp      = Some(ast::ElifComp::new(elif_expr.expect("missing elif-predicate"), elif_block));
+        let elif_comp      = Some(ast::ElifComp::new(elif_expr, elif_block));
 
 	Ok(elif_comp)
     }

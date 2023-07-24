@@ -4,7 +4,8 @@
 //! The preprocessor strips multi-line and single-line C-style comments from
 //! the source file.
 
-use ariadne::{Config, Label, Report, ReportKind, Source};
+use ariadne::{Cache, Config, FileCache, Label, Report, ReportKind, Source};
+use std::ops::Range;
 use thiserror::Error;
 
 pub struct ErrorReporter;
@@ -23,6 +24,21 @@ impl ErrorReporter {
                     .with_color(ariadne::Color::Red),
             )
             .with_note(note)
+            .finish()
+            .print((path, Source::from(source)))
+            .unwrap();
+    }
+
+    /// Fancy compiler error that is printed when a multi-line comment is
+    /// missing its terminator.
+    pub fn incorrect_file_ext(path: &str, source: &str, offset: usize) {
+        let note = format!("file `{0:?}` must have `.lm` as a file extension.", path);
+        Report::build(ReportKind::Error, path, 0)
+            .with_code(0)
+            .with_message("Incorrect file extension")
+            .with_note(note)
+            .with_config(Config::default())
+            .with_label(Label::new((path, 0..0)))
             .finish()
             .print((path, Source::from(source)))
             .unwrap();

@@ -17,11 +17,19 @@ pub struct Preprocessor {
 
 /// CTOR for the `Preprocessor`
 impl Preprocessor {
-    pub fn new(content: String, path: &str) -> Self {
-        Self {
+    pub fn new(content: String, path: &str) -> Result<Self, PreprocessorError> {
+        if !path.ends_with(".lm")
+        {
+            // Print pretty compiler error
+            ErrorReporter::incorrect_file_ext(path.as_ref(), content.as_ref(), 0);
+
+            return Err(PreprocessorError::Failed(format!("{path}")));
+        }
+
+        Ok(Self {
             content,
             path: path.to_owned(),
-        }
+        })
     }
 }
 

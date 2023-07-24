@@ -53,8 +53,8 @@ fn run_compiler() -> anyhow::Result<()> {
     let source_content = run_fuzzer(source_content);
 
     // Create `Preprocessor` and load it with the source file
-    let preprocessor = Preprocessor::new(source_content, path);
-
+    let preprocessor = Preprocessor::new(source_content, path)?;
+    
     // Remove comments from source file and return a cleaned version
     println!("[1/4] Preprocessing source...");
     let cleaned_source = preprocessor

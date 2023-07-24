@@ -11,6 +11,7 @@ use lexer::token::{Token, TokenKind};
 use ariadne::{Label, Report, ReportKind, Source};
 use thiserror::Error;
 
+
 #[derive(Debug, Error)]
 pub enum ParserError {
     #[error("Failed to parse Lambda program.")]
@@ -574,20 +575,19 @@ impl Parser<'_> {
         // Check for and ignore function def operator (e.g `=`)
         let _func_def_op = self.try_consume(&[FnDef])?;
 
-        // Check for and ignore opening of block (e.g `{`)
-        let _block_open = self.try_consume(&[LBracket])?;
-
         // Parse out `Block`
         let block = self.parse_block()?;
-
-        let _block_close = self.try_consume(&[RBracket])?;
 
         Ok(ast::FuncDefinition::new(func_name, func_params, block))
     }
 
     fn parse_block(&self) -> Result<ast::Block, ParserError> {
+	use TokenKind::*;
+	
+	let _block_open = self.try_consume(&[LBracket])?;
         let statements = self.parse_statements()?;
         let expression = self.parse_expression()?;
+	let _block_close = self.try_consume(&[RBracket])?;
 
         Ok(ast::Block::new(statements, expression))
     }
@@ -658,9 +658,7 @@ impl Parser<'_> {
         let for_low_bound  = self.try_consume(&[NumLit])?;
         let _for_range     = self.try_consume(&[ExRange])?;
         let for_high_bound = self.try_consume(&[NumLit])?;
-	let _open_block    = self.try_consume(&[LBracket])?;
 	let for_block      = self.parse_block()?;
-	let _close_block   = self.try_consume(&[RBracket])?;
 
         Ok(ast::Statement::new_definite_loop(for_index, for_low_bound, for_high_bound, for_block))
     }
@@ -683,9 +681,7 @@ impl Parser<'_> {
 
 	    return Err(ParserError::ParseFail);
 	};
-	let _open_block  = self.try_consume(&[LBracket])?;
 	let while_block  = self.parse_block()?;
-	let _close_block = self.try_consume(&[RBracket])?;
 
         Ok(ast::Statement::new_indefinite_loop(while_expr, while_block))
     }
@@ -723,9 +719,7 @@ impl Parser<'_> {
 
 	    return Err(ParserError::ParseFail);
 	};
-	let _open_block  = self.try_consume(&[LBracket])?;
         let if_block     = self.parse_block()?;
-	let _close_block = self.try_consume(&[RBracket])?;
         let if_comp      = ast::IfComp::new(if_expr, if_block);
 
 	Ok(if_comp)
@@ -757,9 +751,7 @@ impl Parser<'_> {
 
 	    return Err(ParserError::ParseFail);
 	};
-	let _open_block    = self.try_consume(&[LBracket])?;
         let elif_block     = self.parse_block()?;
-	let _close_block   = self.try_consume(&[RBracket])?;
         let elif_comp      = Some(ast::ElifComp::new(elif_expr, elif_block));
 
 	Ok(elif_comp)
@@ -778,9 +770,7 @@ impl Parser<'_> {
 
 	// Parse `else-comp` 
         let _else_kw       = self.try_consume(&[ElseKw])?;
-	let _open_block    = self.try_consume(&[LBracket])?;
         let else_block     = self.parse_block()?;
-	let _close_block   = self.try_consume(&[RBracket])?;
         let else_comp      = Some(ast::ElseComp::new(else_block));
 
 	Ok(else_comp)

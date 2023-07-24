@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import sys, os, subprocess
+import sys, os, subprocess 
+from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow,
     QApplication,
@@ -13,10 +14,12 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QMessageBox,
 )
-from PyQt6.QtGui import QIcon, QAction, QFont
+from PyQt6.QtGui import QIcon, QAction, QFont, QFontMetricsF
 from qt_material import apply_stylesheet
 from ansi2html import Ansi2HTMLConverter
-
+from pygments import highlight
+from pygments.lexers import RustLexer
+from pygments.formatters import Terminal256Formatter
 
 class LambdaIde(QMainWindow):
     def __init__(self):
@@ -24,10 +27,41 @@ class LambdaIde(QMainWindow):
 
         self.sourceFileData = None
         self.sourceFilePath = None
+        self.fullyLoaded    = False
 
         self.initUI()
 
     
+    def updateHighlighting(self):
+        if self.fullyLoaded:
+            content = self.playground.toPlainText()
+
+            print(content)
+            
+            self.playground.blockSignals(True)
+            # Add syntax highlighting to file 
+            ansi_content = highlight(content, 
+                                     RustLexer(), 
+                                     Terminal256Formatter(style="github-dark"))
+
+            ansi_content = ansi_content.rstrip()
+
+            # Convert ANSI colors to QT html 
+            ansiConverter = Ansi2HTMLConverter(latex=False)
+            html_content  = ansiConverter.convert(ansi_content, ensure_trailing_newline=False)
+
+            pos = self.playground.textCursor().position()
+
+            # Write loaded source file to playground 
+            self.playground.clear()
+            self.playground.appendHtml(html_content)
+            cursor = self.playground.textCursor()
+            cursor.setPosition(min(pos, len(self.playground.toPlainText())))
+            self.playground.setTextCursor(cursor)
+            self.playground.blockSignals(False)
+
+
+
     def saveFileHandler(self):
 
         # Make sure we open a source file first before saving
@@ -74,7 +108,15 @@ class LambdaIde(QMainWindow):
         )
 
         # Unwrap source file path
-        self.sourceFilePath = self.fileDialog.getOpenFileName()[0]
+        self.sourceFilePath = Path(self.fileDialog.getOpenFileName()[0])
+        print(type(self.sourceFilePath))
+
+        if self.sourceFilePath.suffix != ".lm":
+            file_name = self.sourceFilePath.name
+            QMessageBox.warning(self, 
+                                "Alert", 
+                                f"Since `{file_name}` does not end with `.lm`, it won't compile!")
+
 
         # If user clicks "cancel", just skip opening file
         if self.sourceFilePath != "":
@@ -82,12 +124,22 @@ class LambdaIde(QMainWindow):
             with open(self.sourceFilePath, "r") as sourceFile:
                 content = sourceFile.read()
 
+                # Add syntax highlighting to file 
+                ansi_content = highlight(content, 
+                                         RustLexer(stripnl=False, ensurenl=False), 
+                                         Terminal256Formatter(style="github-dark"))
+        
+                # Convert ANSI colors to QT html 
+                ansiConverter = Ansi2HTMLConverter(latex=False)
+                html_content  = ansiConverter.convert(ansi_content)
+
                 # Keep track of loaded file 
                 self.sourceFileData = content
                 
                 # Write loaded source file to playground 
                 self.playground.clear()
-                self.playground.insertPlainText(content)
+                self.playground.appendHtml(html_content)
+                self.fullyLoaded = True
 
     def openInfoHandler(self):
         infoMsg = " Author: Dalton Hensley\n Program: MLC IDE\n" \
@@ -151,6 +203,9 @@ class LambdaIde(QMainWindow):
 
         # Add input text box for writing code
         self.playground = QPlainTextEdit("")
+        self.playground.setTabStopDistance(
+        QFontMetricsF(self.playground.font()).horizontalAdvance(' ') * 4)
+        self.playground.textChanged.connect(self.updateHighlighting)
 
         # Add output text box for terminal output
         self.termOutput = QPlainTextEdit("")

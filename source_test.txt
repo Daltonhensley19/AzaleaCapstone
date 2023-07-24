@@ -4,16 +4,9 @@ main = {
     {   
         while 1 
         {
-            }
+
+        }            
     }
 }
 
 
-safe_div :: (float, float) -> float 
-safe_div f1 f2 = {
-    if f2 == 0 {
-        f2 <- 1;
-    } else {
-        f1 / f2
-    }
-}

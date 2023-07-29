@@ -26,7 +26,8 @@ block = { "{" ~ statement* ~ expression? ~ "}" }
 statement = { ( var_bind | selection | indefinite_loop | definite_loop ) }
 
 // let bindings
-var_bind  = { "let" ~ ident ~ assign ~ expression ~ semicolon }
+var_bind  = { "let" ~ ident ~ (type_hint)? ~ assign ~ expression ~ semicolon }
+type_hint = { "::" ~ type }
 
 // if-stmt control flow
 selection = { if_comp ~ elif_comp* ~ else_comp? }

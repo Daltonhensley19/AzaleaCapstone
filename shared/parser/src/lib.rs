@@ -7,10 +7,11 @@ use std::{cell::Cell, path::Path};
 
 use ast::ElseComp;
 use lexer::token::{Token, TokenKind};
+// use visitor::Visit;
 
 use ariadne::{Label, Report, ReportKind, Source};
 use thiserror::Error;
-
+use derive_new::new;
 
 #[derive(Debug, Error)]
 pub enum ParserError {
@@ -19,6 +20,7 @@ pub enum ParserError {
 }
 
 pub struct ParserErrorReporter;
+
 
 // Specific error report handlers
 impl ParserErrorReporter {
@@ -72,7 +74,7 @@ impl ParserErrorReporter {
     }
 
 
-    pub fn missing_ret_ty<'a>(
+    pub fn missing_ty<'a>(
         unexpected: &TokenKind,
         expected_toks: &[TokenKind],
         path: &str,
@@ -80,12 +82,12 @@ impl ParserErrorReporter {
         offset: usize,
     ) {
         let note = format!(
-            "`{0:?}` expected `{1:?}`, but no return type was given",
+            "`{0:?}` expected `{1:?}`, but no type was given",
             unexpected, expected_toks
         );
         Report::build(ReportKind::Error, path, offset)
             .with_code(0)
-            .with_message("Missing Return Type (syntax error)")
+            .with_message("Missing Type (syntax error)")
             .with_label(
                 Label::new((path, offset..offset))
                     .with_message("Here")
@@ -157,10 +159,13 @@ impl ParserErrorReporter {
     }
 }
 
+#[derive(Debug, new)]
+pub struct Type(Token);
+
 mod ast {
     use derive_new::new;
     use lexer::token::Token;
-
+   
     #[derive(Debug, new)]
     pub struct Program {
         declarations: Option<Vec<Declaration>>,
@@ -210,6 +215,7 @@ mod ast {
     pub enum Statement {
         VarBindingInit {
             bind_name: Token,
+	    ty_hint: Option<super::Type>,
             expr: Expression,
         },
         VarBindingMut {
@@ -319,6 +325,211 @@ mod ast {
     // `!`
     pub struct UnaryOp(Token);
 }
+
+//mod visitor {
+    //use crate::ast::*;
+
+    //pub trait Data {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output;
+    //}
+
+    //pub trait Visit {
+	//type Output;
+    
+	//fn visit_program(&self, program: &Program)                 -> Self::Output;
+	//fn visit_declaration(&self, decl: &Declaration)            -> Self::Output;
+	//fn visit_func_signature(&self, func_sig: &FuncSignature)   -> Self::Output;
+	//fn visit_func_definition(&self, func_def: &FuncDefinition) -> Self::Output;
+	//fn visit_block(&self, block: &Block)                       -> Self::Output;
+	//fn visit_statement(&self, stmt: &Statement)                -> Self::Output;
+	//fn visit_if_comp(&self, ifcomp: &IfComp)                   -> Self::Output;
+	//fn visit_elif_comp(&self, elifcomp: &ElifComp)             -> Self::Output;
+	//fn visit_else_comp(&self, elsecomp: &ElseComp)             -> Self::Output;
+	//fn visit_expr(&self, expr: &Expression)                    -> Self::Output;
+	//fn visit_equal(&self, equal: &Equal)                       -> Self::Output;
+	//fn visit_compare(&self, compare: &Compare)                 -> Self::Output;
+	//fn visit_term(&self, term: &Term)                          -> Self::Output;
+	//fn visit_factor(&self, factor: &Factor)                    -> Self::Output;
+	//fn visit_unary(&self, unary: &Unary)                       -> Self::Output;
+	//fn visit_atom(&self, atom: &Atom)                          -> Self::Output;
+    //}
+
+
+    //impl Data for Program {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_program(self)
+	//}
+    //}
+
+    //impl Data for Declaration {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_declaration(self)
+	//}
+    //}
+
+    //impl Data for FuncSignature {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_func_signature(self)
+	//}
+    //}
+
+    //impl Data for FuncDefinition {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_func_definition(self)
+	//}
+    //}
+
+    //impl Data for Block {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_block(self)
+	//}
+    //}
+
+    //impl Data for Statement {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_statement(self)
+	//}
+    //}
+
+    //impl Data for IfComp {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_if_comp(self)
+	//}
+    //}
+
+    //impl Data for ElifComp {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_elif_comp(self)
+	//}
+    //}
+
+    //impl Data for ElseComp {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_else_comp(self)
+	//}
+    //}
+
+    //impl Data for Expression {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_expr(self)
+	//}
+    //}
+
+    //impl Data for Equal {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_equal(self)
+	//}
+    //}
+
+    //impl Data for Compare {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_compare(self)
+	//}
+    //}
+
+    //impl Data for Term {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_term(self)
+	//}
+    //}
+    
+    //impl Data for Factor {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_factor(self)
+	//}
+    //}
+    
+    //impl Data for Unary {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_unary(self)
+	//}
+    //}
+    
+    //impl Data for Atom {
+	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
+		//visitor.visit_atom(self)
+	//}
+    //}
+
+//pub struct AstInspector;
+
+//impl Visit for AstInspector {
+    //type Output = lexer::token::Token;
+
+    //fn visit_program(&self, program: &Program) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_declaration(&self, decl: &Declaration) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_func_signature(&self, func_sig: &FuncSignature) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_func_definition(&self, func_def: &FuncDefinition) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_block(&self, block: &Block) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_statement(&self, stmt: &Statement) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_if_comp(&self, ifcomp: &IfComp) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_elif_comp(&self, elifcomp: &ElifComp) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_else_comp(&self, elsecomp: &ElseComp) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_expr(&self, expr: &Expression) -> Self::Output {
+	//self.visit_expr(expr.)
+    //}
+
+    //fn visit_equal(&self, equal: &Equal) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_compare(&self, compare: &Compare) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_term(&self, term: &Term) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_factor(&self, factor: &Factor) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_unary(&self, unary: &Unary) -> Self::Output {
+        //todo!()
+    //}
+
+    //fn visit_atom(&self, atom: &Atom) -> Self::Output {
+        //match atom
+	//{
+		//// @perf: remove clone here in the future 
+		//Atom::Token(token) => token.clone(),
+		//Atom::Expression(expr) => self.visit_expr(&expr.as_ref().unwrap())
+	//}
+    //}
+//}
+
+
+//}
+
+
 
 pub struct Parser<'parser> {
     tokens: Vec<Token>,
@@ -627,10 +838,10 @@ impl Parser<'_> {
             // Parse statement
             let statement = match curr_token.get_token_kind()
             {
-                LetKw => self.parse_var_binding_init()?,
-                IfKw => self.parse_selection()?,
+                LetKw   => self.parse_var_binding_init()?,
+                IfKw    => self.parse_selection()?,
                 WhileKw => self.parse_indefinite_loop()?,
-                ForKw => self.parse_definite_loop()?,
+                ForKw   => self.parse_definite_loop()?,
                 // Parse `VarBindingMut` if current is `Ident` and next is `<-`
                 Ident if self.optional_peek_next(&[Assign]).is_some() =>
                 {
@@ -784,6 +995,14 @@ impl Parser<'_> {
 
         let var_bind_name = self.try_consume(&[Ident])?;
 
+	// Try to see if user supplied ty-hint and get it.
+	// We either have `("::", ty_hint)` or `(None, None)` or error.
+	let types = &[Ident, IntTy, FloatTy, TextTy, BoolTy];
+	let (_t_qualifier, ty_hint) = self.try_consume2_or_none(&[TQualifer], types)?;
+
+	// If hint was supplied, we have `Some(type_hint)`. Otherwise, `None`.
+	let ty_hint = if ty_hint.is_some() { Some(Type(ty_hint.unwrap())) } else { None };
+	
         let _assign_op = self.try_consume(&[Assign])?;
 
         let rhs = self.parse_expression()?;
@@ -806,6 +1025,7 @@ impl Parser<'_> {
 
         Ok(ast::Statement::new_var_binding_init(
             var_bind_name,
+	    ty_hint,
             rhs.unwrap(),
         ))
     }
@@ -1296,7 +1516,7 @@ impl Parser<'_> {
             let token1 = token1.unwrap().clone();
 
             // Print fancy compiler error
-            ParserErrorReporter::missing_ret_ty(
+            ParserErrorReporter::missing_ty(
                 &token1.get_token_kind(),
                 valid_tokens2.into(),
                 self.path.to_str().unwrap(),

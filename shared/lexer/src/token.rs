@@ -3,6 +3,7 @@
 //! To add support for a new `Token`, you must first add it to this file.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
 
 use crate::span::SpanPoint;
 
@@ -172,6 +173,14 @@ pub struct Token {
     file_index: usize,
     reserved: bool,
 }
+
+// Way to print a `Token` using println!()
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	write!(f, "{}", self.raw_content)
+    }
+}
+
 
 impl Token {
     pub fn new(

@@ -165,6 +165,7 @@ pub struct Type(Token);
 mod ast {
     use derive_new::new;
     use lexer::token::Token;
+    use std::fmt;
    
     #[derive(Debug, new)]
     pub struct Program {
@@ -256,47 +257,29 @@ mod ast {
         block: Block,
     }
 
-    #[derive(Debug, new)]
-    pub struct Expression {
-        equal: Box<Option<Equal>>,
-        // other: Option<Vec<(EqualOp, Equal)>>,
+    // S-expressions!
+    #[derive(Debug, new, Clone)]
+    pub enum Expression {
+	Atom(Token),
+	Cons(Token, Vec<Expression>),
     }
 
-    #[derive(Debug, new)]
-    pub struct Equal {
-        compare: Option<Compare>,
-        other: Option<Vec<(EqualOp, Compare)>>,
+    // Way to print an `Expression` using println!()
+    impl fmt::Display for Expression {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+	    match self {
+		Expression::Atom(i) => write!(f, "{}", i),
+		Expression::Cons(head, rest) => {
+		    write!(f, "({}", head)?;
+		    for s in rest {
+			write!(f, " {}", s)?
+		    }
+		    write!(f, ")")
+		}
+	    }
+	}
     }
-
-    #[derive(Debug, new)]
-    pub struct Compare {
-        term: Option<Term>,
-        other: Option<Vec<(CompareOp, Term)>>,
-    }
-
-    #[derive(Debug, new)]
-    pub struct Term {
-        factor: Option<Factor>,
-        other: Option<Vec<(TermOp, Factor)>>,
-    }
-
-    impl Term {
-        pub fn is_none(&self) -> bool {
-            self.factor.is_none()
-        }
-    }
-
-    #[derive(Debug, new)]
-    pub struct Factor {
-        unary: Option<Unary>,
-        other: Option<Vec<(FactOp, Unary)>>,
-    }
-
-    #[derive(Debug, new)]
-    pub struct Unary {
-        atom: Option<(Option<Vec<UnaryOp>>, Atom)>,
-    }
-
+    
     #[derive(Debug, new)]
     pub enum Atom {
         Token(Token),
@@ -325,211 +308,6 @@ mod ast {
     // `!`
     pub struct UnaryOp(Token);
 }
-
-//mod visitor {
-    //use crate::ast::*;
-
-    //pub trait Data {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output;
-    //}
-
-    //pub trait Visit {
-	//type Output;
-    
-	//fn visit_program(&self, program: &Program)                 -> Self::Output;
-	//fn visit_declaration(&self, decl: &Declaration)            -> Self::Output;
-	//fn visit_func_signature(&self, func_sig: &FuncSignature)   -> Self::Output;
-	//fn visit_func_definition(&self, func_def: &FuncDefinition) -> Self::Output;
-	//fn visit_block(&self, block: &Block)                       -> Self::Output;
-	//fn visit_statement(&self, stmt: &Statement)                -> Self::Output;
-	//fn visit_if_comp(&self, ifcomp: &IfComp)                   -> Self::Output;
-	//fn visit_elif_comp(&self, elifcomp: &ElifComp)             -> Self::Output;
-	//fn visit_else_comp(&self, elsecomp: &ElseComp)             -> Self::Output;
-	//fn visit_expr(&self, expr: &Expression)                    -> Self::Output;
-	//fn visit_equal(&self, equal: &Equal)                       -> Self::Output;
-	//fn visit_compare(&self, compare: &Compare)                 -> Self::Output;
-	//fn visit_term(&self, term: &Term)                          -> Self::Output;
-	//fn visit_factor(&self, factor: &Factor)                    -> Self::Output;
-	//fn visit_unary(&self, unary: &Unary)                       -> Self::Output;
-	//fn visit_atom(&self, atom: &Atom)                          -> Self::Output;
-    //}
-
-
-    //impl Data for Program {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_program(self)
-	//}
-    //}
-
-    //impl Data for Declaration {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_declaration(self)
-	//}
-    //}
-
-    //impl Data for FuncSignature {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_func_signature(self)
-	//}
-    //}
-
-    //impl Data for FuncDefinition {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_func_definition(self)
-	//}
-    //}
-
-    //impl Data for Block {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_block(self)
-	//}
-    //}
-
-    //impl Data for Statement {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_statement(self)
-	//}
-    //}
-
-    //impl Data for IfComp {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_if_comp(self)
-	//}
-    //}
-
-    //impl Data for ElifComp {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_elif_comp(self)
-	//}
-    //}
-
-    //impl Data for ElseComp {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_else_comp(self)
-	//}
-    //}
-
-    //impl Data for Expression {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_expr(self)
-	//}
-    //}
-
-    //impl Data for Equal {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_equal(self)
-	//}
-    //}
-
-    //impl Data for Compare {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_compare(self)
-	//}
-    //}
-
-    //impl Data for Term {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_term(self)
-	//}
-    //}
-    
-    //impl Data for Factor {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_factor(self)
-	//}
-    //}
-    
-    //impl Data for Unary {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_unary(self)
-	//}
-    //}
-    
-    //impl Data for Atom {
-	//fn accept<V: Visit>(&self, visitor: &mut V) -> V::Output {
-		//visitor.visit_atom(self)
-	//}
-    //}
-
-//pub struct AstInspector;
-
-//impl Visit for AstInspector {
-    //type Output = lexer::token::Token;
-
-    //fn visit_program(&self, program: &Program) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_declaration(&self, decl: &Declaration) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_func_signature(&self, func_sig: &FuncSignature) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_func_definition(&self, func_def: &FuncDefinition) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_block(&self, block: &Block) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_statement(&self, stmt: &Statement) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_if_comp(&self, ifcomp: &IfComp) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_elif_comp(&self, elifcomp: &ElifComp) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_else_comp(&self, elsecomp: &ElseComp) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_expr(&self, expr: &Expression) -> Self::Output {
-	//self.visit_expr(expr.)
-    //}
-
-    //fn visit_equal(&self, equal: &Equal) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_compare(&self, compare: &Compare) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_term(&self, term: &Term) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_factor(&self, factor: &Factor) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_unary(&self, unary: &Unary) -> Self::Output {
-        //todo!()
-    //}
-
-    //fn visit_atom(&self, atom: &Atom) -> Self::Output {
-        //match atom
-	//{
-		//// @perf: remove clone here in the future 
-		//Atom::Token(token) => token.clone(),
-		//Atom::Expression(expr) => self.visit_expr(&expr.as_ref().unwrap())
-	//}
-    //}
-//}
-
-
-//}
-
-
 
 pub struct Parser<'parser> {
     tokens: Vec<Token>,
@@ -795,10 +573,11 @@ impl Parser<'_> {
     fn parse_block(&self) -> Result<ast::Block, ParserError> {
 	use TokenKind::*;
 	
-	let _block_open = self.try_consume(&[LBracket])?;
-        let statements = self.parse_statements()?;
-        let expression = self.parse_expression()?;
-	let _block_close = self.try_consume(&[RBracket])?;
+	let _block_open       = self.try_consume(&[LBracket])?;
+        let statements        = self.parse_statements()?;
+	let min_binding_power = 0;
+        let expression        = self.parse_expression(min_binding_power)?;
+	let _block_close      = self.try_consume(&[RBracket])?;
 
         Ok(ast::Block::new(statements, expression))
     }
@@ -878,8 +657,9 @@ impl Parser<'_> {
 	use TokenKind::*;
 
 	// Parse while-loop
-        let while_kw         = self.try_consume(&[WhileKw])?;
-	let Some(while_expr) = self.parse_expression()?
+        let while_kw          = self.try_consume(&[WhileKw])?;
+	let min_binding_power = 0;
+	let Some(while_expr)  = self.parse_expression(min_binding_power)?
 	else
 	{
 	    // Fancy compiler error
@@ -916,8 +696,9 @@ impl Parser<'_> {
 	use TokenKind::*;
 
 	// Parse `if-comp`
-	let if_kw         = self.try_consume(&[IfKw])?;
-        let Some(if_expr) = self.parse_expression()?
+	let if_kw             = self.try_consume(&[IfKw])?;
+	let min_binding_power = 0;
+        let Some(if_expr)     = self.parse_expression(min_binding_power)?
 	else
 	{
 	    // Fancy compiler error
@@ -948,8 +729,9 @@ impl Parser<'_> {
 	}
 
 	// Parse `elif-comp` 
-        let elif_kw         = self.try_consume(&[ElifKw])?;
-        let Some(elif_expr) = self.parse_expression()?
+        let elif_kw           = self.try_consume(&[ElifKw])?;
+	let min_binding_power = 0; 
+        let Some(elif_expr)   = self.parse_expression(min_binding_power)?
 	else
 	{
 	    // Fancy compiler error
@@ -1005,7 +787,9 @@ impl Parser<'_> {
 	
         let _assign_op = self.try_consume(&[Assign])?;
 
-        let rhs = self.parse_expression()?;
+	let min_binding_power = 0;
+        let rhs = self.parse_expression(min_binding_power)?;
+
 
         if rhs.is_none()
         {
@@ -1039,7 +823,8 @@ impl Parser<'_> {
 
         let _assign_op = self.try_consume(&[Assign])?;
 
-        let rhs = self.parse_expression()?;
+	let min_binding_power = 0;
+        let rhs = self.parse_expression(min_binding_power)?;
 
         if rhs.is_none()
         {
@@ -1062,354 +847,73 @@ impl Parser<'_> {
             rhs.unwrap(),
         ))
     }
+    
+    fn get_infix_bind_power(op: &Token) -> (u8, u8) {
+	use TokenKind::*;
 
-    fn parse_expression(&self) -> Result<Option<ast::Expression>, ParserError> {
-        let equal = self.parse_equal()?;
-
-        if equal.is_none()
-        {
-            return Ok(None);
-        }
-
-        Ok(Some(ast::Expression::new(Box::new(equal))))
+	// Note: binding power gives us precedence AND associatvity 
+	match op {
+            tok if tok.is_a(Plus)  => (1, 2),
+            tok if tok.is_a(Minus) => (1, 2),
+            tok if tok.is_a(Mul)   => (3, 4),
+            tok if tok.is_a(Div)   => (3, 4),
+            bad_tok => panic!("Unsupported op: {:?}", bad_tok)
+	}
     }
 
-    fn parse_equal(&self) -> Result<Option<ast::Equal>, ParserError> {
-        let compare = self.parse_compare()?;
-        let other = self.parse_other_compare()?;
+    fn parse_expression(&self, minimum_bp: u8) -> Result<Option<ast::Expression>, ParserError> {
+	use TokenKind::*;
 
-        if compare.is_none()
-        {
-            assert!(other.is_none());
-            return Ok(None);
-        }
+	// Parse LHS of expression 
+	let mut lhs = match self.try_consume(&[Ident, FloatLit, BoolLit, NumLit, RBracket, Semicolon, LParn])? {
+            good_tok if good_tok.is_a(RBracket)  => {self.decrement_parser_pos_by(1); return Ok(None);},
+	    good_tok if good_tok.is_a(Semicolon) => {self.decrement_parser_pos_by(1); return Ok(None);},
+	    good_tok if good_tok.is_a(LParn) => {
+		let min_bp = 0;
+		let lhs = self.parse_expression(min_bp)?;
+		self.try_consume(&[RParn])?;
 
-        Ok(Some(ast::Equal::new(compare, other)))
+		lhs.unwrap()
+	    },
+
+            good_tok => ast::Expression::new_atom(good_tok),
+	};
+
+	loop {
+	    
+	    // Parse operator of expression (if found)
+	    let op_kind = &[Plus, Minus, Div, Mul]; 
+            let op = match self.try_peek(&[Plus, Minus, Div, Mul, EOF, Semicolon, RParn, RBracket])? {
+		tok if tok.is_a(EOF) => break,
+		tok if tok.is_a(Semicolon) => {self.decrement_parser_pos_by(0); break},
+		tok if op_kind.contains(&tok.get_token_kind()) => tok,
+		tok if tok.is_a(RParn) => break,
+		tok if tok.is_a(RBracket) => break,
+		bad_tok => panic!("unsupported token: {:?}", bad_tok),
+            };
+
+	    let (left_bp, right_bp) = Parser::get_infix_bind_power(&op);
+	    
+	    // To maintain operator precedence
+	    if left_bp < minimum_bp
+	    {
+		break;
+	    }
+
+	    self.advance_parser_pos();
+	    let Some(rhs) = self.parse_expression(right_bp)?
+	    else
+	    {
+		panic!("incomplete binop");
+	    };
+
+	    lhs = ast::Expression::new_cons(op, vec![lhs, rhs]);
+	}
+
+	
+	Ok(Some(lhs))
     }
-
-    fn parse_other_equal(&self) -> Result<Option<Vec<(ast::EqualOp, ast::Equal)>>, ParserError> {
-        use TokenKind::*;
-
-        let mut other = Vec::new();
-
-        'other_equal: loop
-        {
-            let equal_op = self.optional_consume(&[Eq, NEq]);
-            if equal_op.is_some()
-            {
-                let equal = self.parse_equal()?;
-
-                // Report error if binary operator is missing its RHS
-                if equal.is_none()
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        equal_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                }
-
-                let equal_op = ast::EqualOp::new(equal_op.unwrap());
-
-                other.push((equal_op, equal.unwrap()))
-            }
-            else
-            {
-                break 'other_equal;
-            }
-        }
-
-        if other.is_empty()
-        {
-            Ok(None)
-        }
-        else
-        {
-            Ok(Some(other))
-        }
-    }
-
-    fn parse_compare(&self) -> Result<Option<ast::Compare>, ParserError> {
-        let term = self.parse_term()?;
-        let other = self.parse_other_term()?;
-
-        if term.is_none()
-        {
-            assert!(other.is_none());
-            return Ok(None);
-        }
-
-        Ok(Some(ast::Compare::new(term, other)))
-    }
-
-    fn parse_other_compare(
-        &self,
-    ) -> Result<Option<Vec<(ast::EqualOp, ast::Compare)>>, ParserError> {
-        use TokenKind::*;
-
-        let mut other = Vec::new();
-
-        'other_compare: loop
-        {
-            let equal_op = self.optional_consume(&[Eq, NEq]);
-            if equal_op.is_some()
-            {
-                let compare = self.parse_compare()?;
-
-                // Report error if binary operator is missing its RHS
-                if compare.is_none()
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        equal_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                }
-
-                let equal_op = ast::EqualOp::new(equal_op.unwrap());
-
-                other.push((equal_op, compare.unwrap()))
-            }
-            else
-            {
-                break 'other_compare;
-            }
-        }
-
-        if other.is_empty()
-        {
-            Ok(None)
-        }
-        else
-        {
-            Ok(Some(other))
-        }
-    }
-
-    fn parse_term(&self) -> Result<Option<ast::Term>, ParserError> {
-        let factor = self.parse_factor()?;
-        let other = self.parse_other_factor()?;
-
-        if factor.is_none()
-        {
-            assert!(other.is_none());
-            return Ok(None);
-        }
-
-        Ok(Some(ast::Term::new(factor, other)))
-    }
-
-    fn parse_other_term(&self) -> Result<Option<Vec<(ast::CompareOp, ast::Term)>>, ParserError> {
-        use TokenKind::*;
-
-        let mut other = Vec::new();
-
-        'other_term: loop
-        {
-            let compare_op = self.optional_consume(&[Lte, Lt, Gt, Gte]);
-            if compare_op.is_some()
-            {
-                let term = self.parse_term()?;
-
-                // Report error if binary operator is missing its RHS
-                if term.is_none()
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        compare_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                }
-
-                let compare_op = ast::CompareOp::new(compare_op.unwrap());
-
-                other.push((compare_op, term.unwrap()))
-            }
-            else
-            {
-                break 'other_term;
-            }
-        }
-
-        if other.is_empty()
-        {
-            Ok(None)
-        }
-        else
-        {
-            Ok(Some(other))
-        }
-    }
-
-    fn parse_factor(&self) -> Result<Option<ast::Factor>, ParserError> {
-        let unary = self.parse_unary()?;
-        let other = self.parse_other_unary()?;
-
-        if unary.is_none()
-        {
-            return Ok(None);
-        }
-
-        Ok(Some(ast::Factor::new(unary, other)))
-    }
-
-    fn parse_unary(&self) -> Result<Option<ast::Unary>, ParserError> {
-        let unary = self.parse_atom()?;
-
-        if unary.is_none()
-        {
-            return Ok(None);
-        }
-
-        Ok(Some(ast::Unary::new(unary)))
-    }
-
-    fn parse_other_unary(&self) -> Result<Option<Vec<(ast::FactOp, ast::Unary)>>, ParserError> {
-        use TokenKind::*;
-
-        let mut other = Vec::new();
-
-        'other_unary: loop
-        {
-            let fact_op = self.optional_consume(&[Mul, Div]);
-            if fact_op.is_some()
-            {
-                let Some(unary) = self.parse_unary()?
-                else
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        fact_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                };
-
-                let fact_op = ast::FactOp::new(fact_op.unwrap());
-
-                other.push((fact_op, unary))
-            }
-            else
-            {
-                break 'other_unary;
-            }
-        }
-
-        if other.is_empty()
-        {
-            Ok(None)
-        }
-        else
-        {
-            Ok(Some(other))
-        }
-    }
-
-    fn parse_other_factor(&self) -> Result<Option<Vec<(ast::TermOp, ast::Factor)>>, ParserError> {
-        use TokenKind::*;
-
-        let mut other = Vec::new();
-
-        'other_factor: loop
-        {
-            let term_op = self.optional_consume(&[Plus, Minus]);
-            if term_op.is_some()
-            {
-                let Some(factor) = self.parse_factor()?
-                else
-                {
-                    // Print fancy compiler error
-                    ParserErrorReporter::incomplete_binary_op(
-                        self.path.to_str().unwrap(),
-                        self.cleaned_source,
-                        term_op.unwrap().get_file_index(),
-                    );
-
-                    return Err(ParserError::ParseFail);
-                };
-
-                let term_op = ast::TermOp::new(term_op.unwrap());
-
-                other.push((term_op, factor))
-            }
-            else
-            {
-                break 'other_factor;
-            }
-        }
-
-        if other.is_empty()
-        {
-            Ok(None)
-        }
-        else
-        {
-            Ok(Some(other))
-        }
-    }
-
-    fn parse_atom(&self) -> Result<Option<(Option<Vec<ast::UnaryOp>>, ast::Atom)>, ParserError> {
-        use TokenKind::*;
-
-        // See if we have any `Not` tokens
-        let mut not_toks = Vec::new();
-        while let Some(not_tok) = self.optional_consume(&[Not])
-        {
-            not_toks.push(ast::UnaryOp::new(not_tok));
-        }
-
-        let not_toks = if not_toks.is_empty()
-        {
-            None
-        }
-        else
-        {
-            Some(not_toks)
-        };
-
-        // Get ident or literal for atom
-        let curr_tok = self.optional_consume(&[Ident, NumLit, FloatLit, BoolLit, LParn]);
-
-        if curr_tok.is_none()
-        {
-            return Ok(None);
-        }
-
-        match curr_tok.clone().unwrap().get_token_kind()
-        {
-            // @todo: Look to see if we need to call `advance_parser_pos()`
-            LParn =>
-            {
-                // Parse `(` `inner_expr` `)`
-                let inner_expr = Ok(Some((
-                    not_toks,
-                    ast::Atom::new_expression(self.parse_expression()?),
-                )));
-
-                // Make sure that user remembers to close with `)`
-                let _ = self.try_consume(&[RParn])?;
-
-                inner_expr
-            }
-            Ident | NumLit | FloatLit | BoolLit =>
-            {
-                Ok(Some((not_toks, ast::Atom::new_token(curr_tok.unwrap()))))
-            }
-            _ => Ok(None),
-        }
-    }
-
+    
     fn try_consume_ty(&self) -> Result<Token, ParserError> {
         use TokenKind::*;
 

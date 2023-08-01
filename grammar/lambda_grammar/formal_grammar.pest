@@ -42,12 +42,16 @@ indefinite_loop = { "while" ~ expression ~ block }
 definite_loop = { "for" ~ ident ~ "in" ~ int_literal ~ ".." ~ int_literal ~ block }
 
 // Expressions 
-expression = { equal }
-equal      = { compare ~ (equal_op ~ compare)* }
-compare    = { term ~ (compar_op ~ term)* }
-term       = { factor ~ (term_op ~ factor)* }
-factor     = { unary ~ (fact_op ~ unary)* }
-unary      = { unary_op ~ unary |  atom }
+// expression = { equal }
+// equal      = { compare ~ (equal_op ~ compare)* }
+// compare    = { term ~ (compar_op ~ term)* }
+// term       = { factor ~ (term_op ~ factor)* }
+// factor     = { unary ~ (fact_op ~ unary)* }
+// unary      = { unary_op ~ unary |  atom }
+
+expression  = { expr_literal | expr_ident | expr_binary_op }
+expr_literal = { num_literal } 
+expr_ident = { ident } 
 
 // Atomic idents tokens
 alpha = { 'a'..'z' | 'A'..'Z' }

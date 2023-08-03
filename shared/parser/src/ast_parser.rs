@@ -559,19 +559,45 @@ impl Parser<'_> {
 	}
     }
 
+    fn get_prefix_bind_power(op: &Token) -> ((), u8) {
+	use TokenKind::*;
+
+	// Note: binding power gives us precedence AND associatvity 
+	match op {
+            tok if tok.is_a(Plus)  => ((), 5),
+            tok if tok.is_a(Minus) => ((), 5),
+            bad_tok => panic!("Unsupported op: {:?}", bad_tok)
+	}
+    }
+
+
+    // Pratt parsing of expressions into S-Expressions
     fn parse_expression(&self, minimum_bp: u8) -> Result<Option<ast::Expression>, ParserError> {
 	use TokenKind::*;
 
 	// Parse LHS of expression 
-	let mut lhs = match self.try_consume(&[Ident, FloatLit, BoolLit, NumLit, RBracket, Semicolon, LParn])? {
+	let mut lhs = match self.try_consume(&[Minus, Ident, FloatLit, BoolLit, NumLit, RBracket, Semicolon, LParn])? {
             good_tok if good_tok.is_a(RBracket)  => {self.decrement_parser_pos_by(1); return Ok(None);},
 	    good_tok if good_tok.is_a(Semicolon) => {self.decrement_parser_pos_by(1); return Ok(None);},
+	    // `(` Expression `)` support 
 	    good_tok if good_tok.is_a(LParn) => {
 		let min_bp = 0;
 		let lhs = self.parse_expression(min_bp)?;
 		self.try_consume(&[RParn])?;
 
 		lhs.unwrap()
+	    },
+	    // Unary operator support
+	    good_tok if good_tok.is_a(Minus) => {
+		let ((), right_bp) = Parser::get_prefix_bind_power(&good_tok);
+		let Some(rhs) = self.parse_expression(right_bp)?
+		else
+		{
+		    panic!("Unary is missing its operand!");
+		};
+
+		ast::Expression::new_cons(good_tok, vec![rhs])
+		
 	    },
 
             good_tok => ast::Expression::new_atom(good_tok),

@@ -381,6 +381,8 @@ impl Lexer {
             ')' => self.consume_one_chars(')', TokenKind::RParn),
             '{' => self.consume_one_chars('{', TokenKind::LBracket),
             '}' => self.consume_one_chars('}', TokenKind::RBracket),
+            '[' => self.consume_one_chars('[', TokenKind::LSBracket),
+            ']' => self.consume_one_chars(']', TokenKind::RSBracket),
             ',' => self.consume_one_chars(',', TokenKind::Sep),
             // Special case
 	    '!' =>

@@ -396,7 +396,7 @@ impl Parser<'_> {
 	// Parse `if-comp`
 	let if_kw             = self.try_consume(&[IfKw])?;
 	let min_binding_power = 0;
-    let Some(if_expr)     = self.parse_expression(min_binding_power)?
+	let Some(if_expr)     = self.parse_expression(min_binding_power)?
 	else
 	{
 	    // Fancy compiler error
@@ -427,9 +427,9 @@ impl Parser<'_> {
 	}
 
 	// Parse `elif-comp` 
-    let elif_kw           = self.try_consume(&[ElifKw])?;
+	let elif_kw           = self.try_consume(&[ElifKw])?;
 	let min_binding_power = 0; 
-    let Some(elif_expr)   = self.parse_expression(min_binding_power)?
+	let Some(elif_expr)   = self.parse_expression(min_binding_power)?
 	else
 	{
 	    // Fancy compiler error
@@ -488,6 +488,7 @@ impl Parser<'_> {
 	let min_binding_power = 0;
         let rhs = self.parse_expression(min_binding_power)?;
 
+	println!("S-Expr: `{rhs}`", rhs=rhs.clone().unwrap());
 
         if rhs.is_none()
         {
@@ -546,37 +547,62 @@ impl Parser<'_> {
         ))
     }
     
-    fn get_infix_bind_power(op: &Token) -> (u8, u8) {
-	use TokenKind::*;
-
-	// Note: binding power gives us precedence AND associatvity 
-	match op {
-            tok if tok.is_a(Plus)  => (1, 2),
-            tok if tok.is_a(Minus) => (1, 2),
-            tok if tok.is_a(Mul)   => (3, 4),
-            tok if tok.is_a(Div)   => (3, 4),
-            bad_tok => panic!("Unsupported op: {:?}", bad_tok)
-	}
-    }
-
     fn get_prefix_bind_power(op: &Token) -> ((), u8) {
 	use TokenKind::*;
 
 	// Note: binding power gives us precedence AND associatvity 
 	match op {
-            tok if tok.is_a(Plus)  => ((), 5),
-            tok if tok.is_a(Minus) => ((), 5),
+            tok if tok.is_a(Minus) => ((), 13),
             bad_tok => panic!("Unsupported op: {:?}", bad_tok)
 	}
     }
 
+    fn get_infix_bind_power(op: &Token) -> Option<(u8, u8)> {
+	use TokenKind::*;
+
+	// Note: binding power gives us precedence AND associatvity 
+	let infix_bp = match op {
+            tok if tok.is_a(OrKw)  => (1, 2),
+            tok if tok.is_a(AndKw) => (3, 4),
+            tok if tok.is_a(Eq)    => (5, 6),
+            tok if tok.is_a(Lt)    => (5, 6),
+            tok if tok.is_a(Lte)   => (5, 6),
+            tok if tok.is_a(Gt)    => (5, 6),
+            tok if tok.is_a(Gte)   => (5, 6),
+            tok if tok.is_a(Plus)  => (7, 8),
+            tok if tok.is_a(Minus) => (7, 8),
+            tok if tok.is_a(Mul)   => (9, 10),
+            tok if tok.is_a(Div)   => (9, 10),
+	    tok if tok.is_a(AsKw)  => (11, 12),
+            bad_tok => panic!("Unsupported op: {:?}", bad_tok)
+	};
+
+	Some(infix_bp)
+    }
+
+    fn get_postfix_bind_power(op: &Token) -> Option<(u8, ())> {
+	use TokenKind::*;
+
+	// Note: binding power gives us precedence AND associatvity 
+	let postfix_bp = match op {
+            tok if tok.is_a(LSBracket) => (15, ()),
+            _ => return None,
+	};
+
+	Some(postfix_bp)
+    }
 
     // Pratt parsing of expressions into S-Expressions
     fn parse_expression(&self, minimum_bp: u8) -> Result<Option<ast::Expression>, ParserError> {
 	use TokenKind::*;
 
 	// Parse LHS of expression 
-	let mut lhs = match self.try_consume(&[Minus, Ident, FloatLit, BoolLit, NumLit, RBracket, Semicolon, LParn])? {
+	let op_kind    = &[Minus]; 
+	let ty_kind    = &[Ident, FloatTy, IntTy, BoolTy, TextTy];
+	let value_kind = &[BoolLit, NumLit, FloatLit];
+	let punc_kind  = &[RBracket, Semicolon, LParn];
+	let all_kind   = &[&op_kind[..], &ty_kind[..], &value_kind[..], &punc_kind[..]].concat();
+	let mut lhs = match self.try_consume(&all_kind)? {
             good_tok if good_tok.is_a(RBracket)  => {self.decrement_parser_pos_by(1); return Ok(None);},
 	    good_tok if good_tok.is_a(Semicolon) => {self.decrement_parser_pos_by(1); return Ok(None);},
 	    // `(` Expression `)` support 
@@ -606,32 +632,85 @@ impl Parser<'_> {
 	loop {
 	    
 	    // Parse operator of expression (if found)
-	    let op_kind = &[Plus, Minus, Div, Mul]; 
-            let op = match self.try_peek(&[Plus, Minus, Div, Mul, EOF, Semicolon, RParn, RBracket])? {
+	    let op_kind   = &[Plus, Minus, Div, Mul, Lt, Lte, Gt, Gte, Eq, OrKw, AndKw, AsKw]; 
+	    let punc_kind = &[LSBracket, RSBracket, RParn, RBracket, Semicolon];
+	    let all_kind  = &[&op_kind[..], &punc_kind[..]].concat();
+            let op = match self.try_peek(&all_kind)? {
 		tok if tok.is_a(EOF) => break,
 		tok if tok.is_a(Semicolon) => {self.decrement_parser_pos_by(0); break},
 		tok if op_kind.contains(&tok.get_token_kind()) => tok,
+		// tok if ty_kind.contains(&tok.get_token_kind()) => tok,
+		tok if tok.is_a(LSBracket) => tok,
+		tok if tok.is_a(RSBracket) => break,
 		tok if tok.is_a(RParn) => break,
 		tok if tok.is_a(RBracket) => break,
 		bad_tok => panic!("unsupported token: {:?}", bad_tok),
             };
 
-	    let (left_bp, right_bp) = Parser::get_infix_bind_power(&op);
-	    
-	    // To maintain operator precedence
-	    if left_bp < minimum_bp
+	    // Handle postfix
+	    if let Some((left_bp, ())) = Parser::get_postfix_bind_power(&op)
 	    {
-		break;
+		// To maintain operator precedence
+		if left_bp < minimum_bp
+		{
+		    break;
+		}
+
+		self.advance_parser_pos();
+		// Parse subscript operator
+		lhs = if op.is_a(LSBracket) {
+		    let Some(rhs) = self.parse_expression(0)?
+		    else
+		    {
+			panic!("Subscript operator has missing value!");
+		    };
+		    self.try_consume(&[RSBracket])?;
+		    
+		    ast::Expression::new_cons(op, vec![lhs, rhs])
+		} else {
+		    ast::Expression::new_cons(op, vec![lhs])
+		};
+
+		continue;
 	    }
 
-	    self.advance_parser_pos();
-	    let Some(rhs) = self.parse_expression(right_bp)?
-	    else
+	    // Handle infix 
+	    if let Some((left_bp, right_bp)) = Parser::get_infix_bind_power(&op)
 	    {
-		panic!("incomplete binop");
-	    };
+		// To maintain operator precedence
+		if left_bp < minimum_bp
+		{
+		    break;
+		}
 
-	    lhs = ast::Expression::new_cons(op, vec![lhs, rhs]);
+		self.advance_parser_pos();
+		lhs =  if op.is_a(AsKw) {
+		    // Make sure next token is a type
+		    self.try_peek(&[IntTy, Ident, FloatTy, BoolTy, TextTy])?;
+		    let Some(rhs) = self.parse_expression(right_bp)?
+		    else
+		    {
+			panic!("incomplete binop");
+		    };
+	
+		    ast::Expression::new_cons(op, vec![lhs, rhs])
+		    
+		} else {
+
+		    let Some(rhs) = self.parse_expression(right_bp)?
+		    else
+		    {
+			panic!("incomplete binop");
+		    };
+
+		    ast::Expression::new_cons(op, vec![lhs, rhs])
+		};
+
+		continue;
+
+	    }
+
+	    break;
 	}
 
 	

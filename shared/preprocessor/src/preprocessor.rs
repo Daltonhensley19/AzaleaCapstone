@@ -197,8 +197,11 @@ impl Preprocessor {
         Ok(self)
     }
 
-    /// Gets the cleaned up version of the source file.
-    /// NOTE: Make sure you actually clean the file(s) first!
+    /// A Rust "move" of the preprocessed version of the
+    /// source file out of the `Preprocessor`, leaving an
+    /// empty String in its place.
+    ///
+    /// Warning: Make sure you actually preprocess the file(s) first!
     pub fn get_cleaned_sources(mut self) -> String {
         std::mem::replace(&mut self.content, String::new())
     }

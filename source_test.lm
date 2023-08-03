@@ -1,7 +1,9 @@
 main :: ()
 main = {
-     let x <- -1;
-
+    // type checker will verify this
+      /* let x <- x / 222 + 1; */ 
+        
+      /*   animal */
 }
 
 

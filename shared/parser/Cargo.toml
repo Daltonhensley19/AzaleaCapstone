@@ -12,3 +12,4 @@ thiserror  = "1.0.41"
 
 lexer   = {path = "../lexer/"}
 visitor = {path = "../visitor/"}
+serde = { version = "1.0.180", features = ["derive"] }

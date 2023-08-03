@@ -4,7 +4,9 @@
 
 use std::ops::Index;
 
-#[derive(Default, Debug, Clone, Copy)]
+use serde::Serialize;
+
+#[derive(Serialize, Default, Debug, Clone, Copy)]
 /// `SpanPoint` represents an individual point within the range of a `Span`
 /// Specifically, you can use `SpanPoint` to get the
 pub struct SpanPoint {

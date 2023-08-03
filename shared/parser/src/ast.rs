@@ -3,19 +3,21 @@
 //! NOTE: The formal grammar is defined in the `grammar/` directory inside the file
 //! `formal_grammar.pest`.
 
-use derive_new::new;
-use lexer::token::Token;
 use std::fmt;
 
-#[derive(Debug, new)]
+use lexer::token::Token;
+use derive_new::new;
+use serde::Serialize;
+    
+#[derive(Serialize, Debug, new)]
 pub struct Type(pub Token);
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct Program {
     declarations: Option<Vec<Declaration>>,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub enum Declaration {
     Function {
         signature: FuncSignature,
@@ -35,27 +37,27 @@ pub enum Declaration {
     },
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct FuncSignature {
     func_name: Token,
     ty_list: Option<Vec<Token>>,
     ty_ret: Option<Token>,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct FuncDefinition {
     func_name: Token,
     arg_list: Option<Vec<Token>>,
     block: Block,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct Block {
     statements: Option<Vec<Statement>>,
     expression: Option<Expression>,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub enum Statement {
     VarBindingInit {
         bind_name: Token,
@@ -83,25 +85,25 @@ pub enum Statement {
     },
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct IfComp {
     bool_expr: Expression,
     block: Block,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct ElifComp {
     bool_expr: Expression,
     block: Block,
 }
 
-#[derive(Debug, new)]
+#[derive(Serialize, Debug, new)]
 pub struct ElseComp {
     block: Block,
 }
 
 // S-expressions!
-#[derive(Debug, new, Clone)]
+#[derive(Serialize, Debug, new, Clone)]
 pub enum Expression {
     Atom(Token),
     Cons(Token, Vec<Expression>),

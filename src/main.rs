@@ -1,11 +1,15 @@
+use std::io::Write;
 use std::{io::Read, path::Path};
+use std::fs;
 
 use fuzzer::{Fuzzer, XORShiftState};
 use lexer::lexer::Lexer;
 use parser::ast_parser::Parser as AstParser;
+use parser::ast;
 use preprocessor::preprocessor::Preprocessor;
 
 use clap::Parser as ClapParser;
+
 
 /// Simple program to greet a person
 #[derive(ClapParser, Debug)]
@@ -37,6 +41,25 @@ fn run_fuzzer(source_content: String) -> String {
     let source_content = fuzzer.fuzz();
 
     source_content
+}
+
+fn seralize_ast_to_path<P: AsRef<Path>>(ast: &ast::Program, path: P) -> anyhow::Result<()> {
+    // Seralize AST into JSON 
+    let serialized = serde_json::to_string_pretty(ast)?;
+
+    // Open file for writing 
+    let file = fs::OpenOptions::new()
+	.write(true)
+	.truncate(true)
+	.open(path)?;
+
+    // Create a `writer` using the above file settings
+    let mut writer = std::io::BufWriter::new(file);
+
+    // Write out serialized AST to disk
+    writer.write_all(serialized.as_bytes())?;
+    
+    Ok(())
 }
 
 fn run_compiler() -> anyhow::Result<()> {
@@ -76,7 +99,11 @@ fn run_compiler() -> anyhow::Result<()> {
 
     // Parse tokens into the abstract syntax tree with `parser`
     println!("[3/4] Parsing tokens...");
-    let ast = parser.parse();
+    let ast = parser.parse()?;
+
+    // Seralize AST to disk for analysis (can be disabled!)
+    #[cfg(feature = "serialize")]
+    seralize_ast_to_path(&ast, "ast_dump/ast.json")?;
 
     println!("{ast:#?}");
     

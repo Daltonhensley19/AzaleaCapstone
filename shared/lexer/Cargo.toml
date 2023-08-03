@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 ariadne = "0.3.0"
+serde = { version = "1.0.180", features = ["derive"] }
 thiserror = "1.0.40"

@@ -6,8 +6,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use crate::span::SpanPoint;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use serde::Serialize;
+    
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
     Ident,
     IntTy,
@@ -164,13 +165,18 @@ pub enum TokenHint {
     Number,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Token {
     raw_content: String,
+    #[serde(skip)]
     kind: TokenKind,
+    #[serde(skip)]
     span_start: SpanPoint,
+    #[serde(skip)]
     span_end: SpanPoint,
+    #[serde(skip)]
     file_index: usize,
+    #[serde(skip)]
     reserved: bool,
 }
 

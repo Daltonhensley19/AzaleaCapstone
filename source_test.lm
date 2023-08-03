@@ -1,7 +1,12 @@
 main :: ()
 main = {
     // type checker will verify this
-       let x <- x / 222 + 1; 
+       let x <- ((3 + 3) <= 2) and (4 < 3);
+
+       if x < 2
+       {
+           let z <- 12 + 2;
+       }
         
          animal 
 }

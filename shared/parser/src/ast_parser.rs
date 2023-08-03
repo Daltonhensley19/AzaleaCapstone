@@ -633,7 +633,7 @@ impl Parser<'_> {
 	    
 	    // Parse operator of expression (if found)
 	    let op_kind   = &[Plus, Minus, Div, Mul, Lt, Lte, Gt, Gte, Eq, OrKw, AndKw, AsKw]; 
-	    let punc_kind = &[LSBracket, RSBracket, RParn, RBracket, Semicolon];
+	    let punc_kind = &[LSBracket, RSBracket,RParn, LBracket, RBracket, Semicolon];
 	    let all_kind  = &[&op_kind[..], &punc_kind[..]].concat();
             let op = match self.try_peek(&all_kind)? {
 		tok if tok.is_a(EOF) => break,
@@ -643,6 +643,7 @@ impl Parser<'_> {
 		tok if tok.is_a(LSBracket) => tok,
 		tok if tok.is_a(RSBracket) => break,
 		tok if tok.is_a(RParn) => break,
+		tok if tok.is_a(LBracket) => break,
 		tok if tok.is_a(RBracket) => break,
 		bad_tok => panic!("unsupported token: {:?}", bad_tok),
             };

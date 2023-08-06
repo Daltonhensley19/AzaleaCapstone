@@ -1,0 +1,39 @@
+{
+  "declarations": [
+    {
+      "Function": {
+        "signature": {
+          "func_name": {
+            "raw_content": "main"
+          },
+          "ty_list": null,
+          "ty_ret": null
+        },
+        "definition": {
+          "func_name": {
+            "raw_content": "main"
+          },
+          "arg_list": null,
+          "block": {
+            "statements": [
+              {
+                "VarBindingInit": {
+                  "bind_name": {
+                    "raw_content": "x"
+                  },
+                  "ty_hint": null,
+                  "expr": {
+                    "Atom": {
+                      "raw_content": "1"
+                    }
+                  }
+                }
+              }
+            ],
+            "expression": null
+          }
+        }
+      }
+    }
+  ]
+}

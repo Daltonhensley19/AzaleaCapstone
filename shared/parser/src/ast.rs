@@ -62,6 +62,7 @@ pub enum Statement {
     VarBindingInit {
         bind_name: Token,
         ty_hint: Option<Type>,
+
         expr: Expression,
     },
     VarBindingMut {

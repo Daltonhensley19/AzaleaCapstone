@@ -34,10 +34,16 @@ def walk_dict(key, diction):
                 walk_dict(j, value)
             elif isinstance(value, str):
                 G2.node(key, color="lightblue", style="filled")
-                G2.node(j, color="lightgreen", style="filled")
                 G2.node(value, color="maroon", style="filled")
-                G2.edge(key, j)
-                G2.edge(j, value)
+                print(key, j)
+                print(j, value)
+                if str(j) == "raw_content":
+                    G2.edge(key, value)
+                else:
+                    G2.node(j, color="lightgreen", style="filled")
+                    G2.edge(key, j)
+                    G2.edge(j, value)
+
 
             elif isinstance(value, list):
                 print(key)

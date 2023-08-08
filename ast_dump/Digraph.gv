@@ -9,10 +9,8 @@ strict digraph {
 	func_name [color=lightblue style=filled]
 	signature -> func_name
 	func_name [color=lightblue style=filled]
-	raw_content [color=lightgreen style=filled]
 	main [color=maroon style=filled]
-	func_name -> raw_content
-	raw_content -> main
+	func_name -> main
 	signature -> ty_list
 	ty_list [color=grey style=filled]
 	signature -> ty_ret
@@ -24,10 +22,8 @@ strict digraph {
 	func_name [color=lightblue style=filled]
 	definition -> func_name
 	func_name [color=lightblue style=filled]
-	raw_content [color=lightgreen style=filled]
 	main [color=maroon style=filled]
-	func_name -> raw_content
-	raw_content -> main
+	func_name -> main
 	definition -> arg_list
 	arg_list [color=grey style=filled]
 	definition [color=lightblue style=filled]
@@ -41,10 +37,8 @@ strict digraph {
 	bind_name [color=lightblue style=filled]
 	VarBindingInit -> bind_name
 	bind_name [color=lightblue style=filled]
-	raw_content [color=lightgreen style=filled]
 	x [color=maroon style=filled]
-	bind_name -> raw_content
-	raw_content -> x
+	bind_name -> x
 	VarBindingInit -> ty_hint
 	ty_hint [color=grey style=filled]
 	VarBindingInit [color=lightblue style=filled]
@@ -54,10 +48,8 @@ strict digraph {
 	Atom [color=lightblue style=filled]
 	expr -> Atom
 	Atom [color=lightblue style=filled]
-	raw_content [color=lightgreen style=filled]
 	1 [color=maroon style=filled]
-	Atom -> raw_content
-	raw_content -> 1
+	Atom -> 1
 	block -> expression
 	expression [color=grey style=filled]
 }

@@ -208,7 +208,7 @@ class LambdaIde(QMainWindow):
         # Add input text box for writing code
         self.playground = QPlainTextEdit("")
         self.playground.setTabStopDistance(
-        QFontMetricsF(self.playground.font()).horizontalAdvance(' ') * 4)
+        QFontMetricsF(self.playground.font()).horizontalAdvance(' ') * 6)
         self.playground.textChanged.connect(self.updateHighlighting)
 
         # Add output text box for terminal output

@@ -38,7 +38,10 @@ class LambdaIde(QMainWindow):
 
             print(content)
             
+            # We block signals to prevent stack overflow. 
+            # If we didn't, typing would recursively call `updateHighlighting`.
             self.playground.blockSignals(True)
+
             # Add syntax highlighting to file 
             ansi_content = highlight(content, 
                                      RustLexer(), 
@@ -96,6 +99,7 @@ class LambdaIde(QMainWindow):
         htmlCompilerOutput = ansiConverter.convert(compilerOutput)
 
         # Write compiler output to the terminal output text widget
+        self.termOutput.clear()
         self.termOutput.appendHtml(htmlCompilerOutput)
 
 
@@ -220,9 +224,10 @@ class LambdaIde(QMainWindow):
 
         ideWidget = QWidget()
         ideWidget.setLayout(layout)
-
-        self.setGeometry(300, 300, 350, 250)
-        self.setWindowTitle("Simple menu")
+        
+        # Window layout/settings
+        self.setGeometry(300, 300, 1050, 750)
+        self.setWindowTitle("Lambda IDE")
         self.setCentralWidget(ideWidget)
 
 

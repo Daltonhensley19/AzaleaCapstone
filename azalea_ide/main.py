@@ -21,9 +21,9 @@ from pygments import highlight
 from pygments.lexers import RustLexer
 from pygments.formatters import Terminal256Formatter
 
-class LambdaIde(QMainWindow):
+class AzaleaIde(QMainWindow):
     def __init__(self):
-        super(LambdaIde, self).__init__()
+        super(AzaleaIde, self).__init__()
 
         self.sourceFileData = None
         self.sourceFilePath = None
@@ -81,18 +81,18 @@ class LambdaIde(QMainWindow):
 
     def compileAndRunHandler(self):
         
-        # Make sure we open a source file first before running Lambda compiler
+        # Make sure we open a source file first before running Azalea compiler
         if self.sourceFilePath == None:
             QMessageBox.critical(self, "Attention", "Make sure to open a file first.")
             return 
 
-        # Run Morehead Lambda Compiler on source file and get console output
+        # Run Morehead Azalea Compiler on source file and get console output
         compilerProcess = subprocess.Popen(["compiler/debug/mlc", "--source-path", f"{self.sourceFilePath}"], stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, text=True)
         compilerOutput, _err = compilerProcess.communicate()
 
         # Create an ansi code to html converter. 
-        # We use this to properly display Lambda's compiler output
+        # We use this to properly display Azalea's compiler output
         ansiConverter = Ansi2HTMLConverter(latex=False)
         
         # Clean the compiler output to remove ansi color codes
@@ -115,11 +115,11 @@ class LambdaIde(QMainWindow):
         self.sourceFilePath = Path(self.fileDialog.getOpenFileName()[0])
         print(type(self.sourceFilePath))
 
-        if self.sourceFilePath.suffix != ".lm":
+        if self.sourceFilePath.suffix != ".az":
             file_name = self.sourceFilePath.name
             QMessageBox.warning(self, 
                                 "Alert", 
-                                f"Since `{file_name}` does not end with `.lm`, it won't compile!")
+                                f"Since `{file_name}` does not end with `.az`, it won't compile!")
 
 
         # If user clicks "cancel", just skip opening file
@@ -146,9 +146,9 @@ class LambdaIde(QMainWindow):
                 self.fullyLoaded = True
 
     def openInfoHandler(self):
-        infoMsg = " Author: Dalton Hensley\n Program: MLC IDE\n" \
+        infoMsg = " Author: Dalton Hensley\n Program: Azalea IDE\n" \
         " License: MIT\n\n This program is meant to serve as an interface to " \
-        "the Morehead Lambda Compiler. You may write small Lambda programs " \
+        "the Morehead Azalea Compiler. You may write small Azalea programs " \
         "in the `Playground` box and execute programs via the `compile and run` " \
         "button.\n"
 
@@ -227,7 +227,7 @@ class LambdaIde(QMainWindow):
         
         # Window layout/settings
         self.setGeometry(300, 300, 1050, 750)
-        self.setWindowTitle("Lambda IDE")
+        self.setWindowTitle("Azalea IDE")
         self.setCentralWidget(ideWidget)
 
 
@@ -241,7 +241,7 @@ def main():
 
 
     # Initalize IDE and display it to screen
-    ide = LambdaIde()
+    ide = AzaleaIde()
     ide.show()
 
     # Return exit code based on the exit code of the IDE

@@ -112,7 +112,7 @@ fn run_compiler() -> anyhow::Result<()> {
 }
 
 fn main() -> anyhow::Result<()> {
-    // Run the Morehead Lambda Compiler
+    // Run the Morehead Azalea Compiler
     run_compiler()?;
 
     Ok(())

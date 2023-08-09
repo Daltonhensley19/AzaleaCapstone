@@ -1,4 +1,4 @@
-//! AST parser error types for the Morehead Lambda Compiler
+//! AST parser error types for the Morehead Azalea Compiler
 //!
 //! NOTE: The formal grammar is defined in the `grammar/` directory inside the file
 //! `formal_grammar.pest`.
@@ -7,10 +7,10 @@ use ariadne::{Label, Report, ReportKind, Source};
 use thiserror::Error;
 use lexer::token::{Token, TokenKind};
 
-// `ParserError` represents a general failure to parse a Lambda program
+// `ParserError` represents a general failure to parse a Azalea program
 #[derive(Debug, Error)]
 pub enum ParserError {
-    #[error("Failed to parse Lambda program.")]
+    #[error("Failed to parse Azalea program.")]
     ParseFail,
 }
 

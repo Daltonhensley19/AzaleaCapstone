@@ -1,4 +1,4 @@
-//! Defines the preprocessor for the Morehead Lambda Compiler.
+//! Defines the preprocessor for the Morehead Azalea Compiler.
 //!
 //! The preprocessor is responsible for stripping out C-style comments before
 //! sending the source file off to the lexer to be tokenized.
@@ -18,7 +18,7 @@ pub struct Preprocessor {
 /// CTOR for the `Preprocessor`
 impl Preprocessor {
     pub fn new(content: String, path: &str) -> Result<Self, PreprocessorError> {
-        if !path.ends_with(".lm")
+        if !path.ends_with(".az")
         {
             // Print pretty compiler error
             ErrorReporter::incorrect_file_ext(path.as_ref(), content.as_ref(), 0);
@@ -108,7 +108,6 @@ impl Preprocessor {
 		    || (temp_chr == Some('*') && chars.peek() != Some(&'/'))
 		    || (temp_chr != Some('*') && chars.peek() == Some(&'/'))
                 {
-
 		    
                     // If we are trying to handle multi-line comment and we reach the end of the
                     // file, then that means the user forgot to terminate their comment! So, the

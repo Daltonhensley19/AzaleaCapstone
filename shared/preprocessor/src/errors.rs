@@ -1,5 +1,5 @@
 //! Defines the possible errors that may arise during preprocessing in the
-//! Morehead Lambda Compiler.
+//! Morehead Azalea Compiler.
 //!
 //! The preprocessor strips multi-line and single-line C-style comments from
 //! the source file.
@@ -29,10 +29,10 @@ impl ErrorReporter {
             .unwrap();
     }
 
-    /// Fancy compiler error that is printed when a multi-line comment is
-    /// missing its terminator.
+    /// Fancy compiler error that is printed when source files have 
+    /// incorrect file extensions
     pub fn incorrect_file_ext(path: &str, source: &str, offset: usize) {
-        let note = format!("file `{0:?}` must have `.lm` as a file extension.", path);
+        let note = format!("file `{0:?}` must have `.az` as a file extension.", path);
         Report::build(ReportKind::Error, path, 0)
             .with_code(0)
             .with_message("Incorrect file extension")

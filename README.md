@@ -1,6 +1,6 @@
-# Lambda AOT Compiler (Morehead Lambda Compiler)
+# Azalea AOT Compiler (Morehead Azalea Compiler)
 
-The Lambda programming language's implementation of an ahead-of-time (AOT)
+The Azalea programming language's implementation of an ahead-of-time (AOT)
     compiler can be found in this repository. This work, carried out as a URF
     (Undergraduate Research Fellowship) student researcher at Morehead State
     University, serves as Dalton Hensley's Bachelor's thesis.
@@ -8,10 +8,10 @@ The Lambda programming language's implementation of an ahead-of-time (AOT)
 
 ## Introduction
 
-With the help of the Lambda AOT Compiler, Lambda programs can be effectively
+With the help of the Azalea AOT Compiler, Azalea programs can be effectively
 converted into machine code that can be executed directly by the target
 hardware. This project's main goal is to investigate how utilizing AOT
-compilation techniques might enhance the performance of Lambda programs.
+compilation techniques might enhance the performance of Azalea programs.
 
 ## About the Author
 
@@ -23,7 +23,7 @@ Dalton's undergraduate research experience.
 
 ## Compiler Design
 
-The Lambda AOT Compiler adheres to a common compilation pipeline that includes
+The Azalea AOT Compiler adheres to a common compilation pipeline that includes
 a series of phases, each helping to transform the source code into
 optimized machine code. The following are the key phases of the compiler's design:
 
@@ -69,8 +69,8 @@ optimized machine code. The following are the key phases of the compiler's desig
    executable instructions in this step, producing an AOT-compiled binary that
    can be directly executed by the target hardware.
 
-By following this compilation pipeline, the Lambda AOT Compiler ensures the
-accurate translation of Lambda source code into efficient and optimized machine
+By following this compilation pipeline, the Azalea AOT Compiler ensures the
+accurate translation of Azalea source code into efficient and optimized machine
 code.
 
 ## LLVM Intermediate Representation (IR)
@@ -80,9 +80,9 @@ hardware being used. The semantics of a program are captured by the low-level,
 strongly typed, and well-defined language known as LLVM IR.
 
 Between the frontend (parsing and semantic analysis) and the backend (code
-generation), the Lambda AOT Compiler utilizes LLVM IR. The compiler can access
+generation), the Azalea AOT Compiler utilizes LLVM IR. The compiler can access
 a variety of potent optimization techniques and can target various hardware
-architectures without the need for manual reimplementation by converting Lambda
+architectures without the need for manual reimplementation by converting Azalea
 source code into LLVM IR.
 
 The typed instructions that make up the LLVM IR are used to represent different
@@ -99,16 +99,16 @@ effective and quick machine code.
 
 ## Repository Structure
 
-- `src/`: Contains the source code of the Lambda AOT Compiler.
-- `shared/`: Contains the source code of the Lambda AOT Compiler libraries.
-- `lynx/`: Contains Lambda's automated build system. 
-- `examples/`: Includes example Lambda programs to test the compiler.
+- `src/`: Contains the source code of the Azalea AOT Compiler.
+- `shared/`: Contains the source code of the Azalea AOT Compiler libraries.
+- `lynx/`: Contains Azalea's automated build system. 
+- `examples/`: Includes example Azalea programs to test the compiler.
 - `docs/`: Documentation and related resources.
 - `tests/`: Test cases to validate the compiler's functionality.
 
 ## Getting Started
 
-To get started with the Lambda AOT Compiler, follow these steps:
+To get started with the Azalea AOT Compiler, follow these steps:
 
 1. Clone the repository:
 
@@ -124,13 +124,13 @@ username/repository-name.git
    cd repository-name
    ```
 
-3. Build and compile the Lambda AOT Compiler:
+3. Build and compile the Azalea AOT Compiler:
 
    ```shell
    # Instructions for building the compiler
    ```
 
-4. Run the compiler on a Lambda source file:
+4. Run the compiler on a Azalea source file:
 
    ```shell
    # Instructions for running the compiler
@@ -174,7 +174,7 @@ documentation in the `docs/` directory.
 
 ## Contributions
 
-Contributions to the Lambda AOT Compiler project are welcome. If you find any
+Contributions to the Azalea AOT Compiler project are welcome. If you find any
 bugs, have suggestions for improvements, or would like to add new features,
 please submit an issue or a pull request.
 
@@ -183,7 +183,7 @@ the project's code of conduct.
 
 ## License
 
-The Lambda AOT Compiler is released under the [MIT
+The Azalea AOT Compiler is released under the [MIT
 License](https://opensource.org/licenses/MIT). See the [LICENSE](LICENSE) file
 for more information.
 

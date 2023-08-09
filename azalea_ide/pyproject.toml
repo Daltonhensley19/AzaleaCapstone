@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "lambda-ide"
+name = "azalea-ide"
 version = "0.1.0"
-description = "This is the IDE for the Morehead Lambda Compiler"
+description = "This is the IDE for the Morehead Azalea Compiler"
 authors = ["daltonhensley19 <daltonhensley2000@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "lambda_ide"}]
+packages = [{include = "azalea_ide"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

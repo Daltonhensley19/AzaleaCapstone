@@ -1,7 +1,7 @@
 Copyright © 2023 Dalton Hensley. All Rights Reserved.
 
 Prologue:
-    - This document outlines experimental syntax for "Lambda" language. 
+    - This document outlines experimental syntax for "Azalea" language. 
     
     - Goal 1: Expression based.
     - Goal 2: Statically typed.

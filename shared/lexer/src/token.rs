@@ -1,4 +1,4 @@
-//! Defines the tokens that are supported by the Morehead Lambda Compiler.
+//! Defines the tokens that are supported by the Morehead Azalea Compiler.
 //!
 //! To add support for a new `Token`, you must first add it to this file.
 

@@ -7,7 +7,7 @@ use pest_ascii_tree::*;
 
 #[derive(Parser)]
 #[grammar = "formal_grammar.pest"]
-struct LambdaParser;
+struct AzaleaParser;
 
 fn main() -> anyhow::Result<()> {
     // Read formal grammar spec from disk at compile time
@@ -16,7 +16,7 @@ fn main() -> anyhow::Result<()> {
     println!("{content}");
     
     // Test the grammar out on the test source file to see if the grammar works
-    let tokens = LambdaParser::parse(Rule::source_file, content)?;
+    let tokens = AzaleaParser::parse(Rule::source_file, content)?;
 
     let ascii_tree = into_ascii_tree(tokens)?;
         

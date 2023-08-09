@@ -1,14 +1,14 @@
-## Morehead Lambda Compiler (MLC) Preprocessor Implementation 
+## Morehead Azalea Compiler (MAC) Preprocessor Implementation 
 
-Before lexical and syntactic analysis, the preprocessor in MLC performs
+Before lexical and syntactic analysis, the preprocessor in MAC performs
 text manipulation operations on the source code. Preprocessor directives are
 unique instructions that change the source code before compilation; they are
-handled by this function. A noteworthy example: MLC's preprocessor strips
+handled by this function. A noteworthy example: MAC's preprocessor strips
 C-like comments from source files.
 
 ## Contributions
 
-Contributions to the Lambda AOT Compiler project are welcome. If you find any
+Contributions to the Azalea AOT Compiler project are welcome. If you find any
 bugs, have suggestions for improvements, or would like to add new features,
 please submit an issue or a pull request.
 
@@ -17,7 +17,7 @@ the project's code of conduct.
 
 ## License
 
-The Lambda AOT Compiler is released under the [MIT
+The Azalea AOT Compiler is released under the [MIT
 License](https://opensource.org/licenses/MIT). See the [LICENSE](LICENSE) file
 for more information.
 

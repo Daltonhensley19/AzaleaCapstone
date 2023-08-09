@@ -1,13 +1,13 @@
-## Morehead Lambda Compiler (MLC) Lexer Implementation 
+## Morehead Azalea Compiler (MAC) Lexer Implementation 
 
-MLC's lexer is reads source code and converts it into tokens, which are smaller
+MAC's lexer is reads source code and converts it into tokens, which are smaller
 pieces of code. These tokens stand in for the fundamental building blocks of
 the programming language, including literals, operators, identifiers, and
 keywords.
 
 ## Contributions
 
-Contributions to the Lambda AOT Compiler project are welcome. If you find any
+Contributions to the Azalea AOT Compiler project are welcome. If you find any
 bugs, have suggestions for improvements, or would like to add new features,
 please submit an issue or a pull request.
 
@@ -16,7 +16,7 @@ the project's code of conduct.
 
 ## License
 
-The Lambda AOT Compiler is released under the [MIT
+The Azalea AOT Compiler is released under the [MIT
 License](https://opensource.org/licenses/MIT). See the [LICENSE](LICENSE) file
 for more information.
 

@@ -1,24 +1,11 @@
-Color :: choice {
-		Red,
-		Green,
-		Blue
-
-}
-
 Person :: structure {
-		age :: int,
-		name :: bool
+    age  :: int,
+    name :: text
 }
 
 main :: ()
 main = {
-   let x <- 1;
-   let y <- 23 - 12;
-			
-		y <- 23 - 32;
 	
-	
-
 }
 
-                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                    

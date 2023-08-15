@@ -1,5 +1,40 @@
 strict digraph {
 	declarations [color=lightblue style=filled]
+	Choice [color=lightblue style=filled]
+	declarations -> Choice
+	Choice [color=lightblue style=filled]
+	name [color=lightblue style=filled]
+	Choice -> name
+	name [color=lightblue style=filled]
+	Color [color=maroon style=filled]
+	name -> Color
+	Choice -> variants
+	variants [color=lightblue style=filled]
+	Red [color=maroon style=filled]
+	variants -> Red
+	variants [color=lightblue style=filled]
+	Green [color=maroon style=filled]
+	variants -> Green
+	variants [color=lightblue style=filled]
+	Blue [color=maroon style=filled]
+	variants -> Blue
+	declarations [color=lightblue style=filled]
+	Struct [color=lightblue style=filled]
+	declarations -> Struct
+	Struct [color=lightblue style=filled]
+	name [color=lightblue style=filled]
+	Struct -> name
+	name [color=lightblue style=filled]
+	Person [color=maroon style=filled]
+	name -> Person
+	Struct -> typed_fields
+	typed_fields [color=lightblue style=filled]
+	age [color=maroon style=filled]
+	typed_fields -> age
+	typed_fields [color=lightblue style=filled]
+	int [color=maroon style=filled]
+	typed_fields -> int
+	declarations [color=lightblue style=filled]
 	Function [color=lightblue style=filled]
 	declarations -> Function
 	Function [color=lightblue style=filled]
@@ -50,6 +85,64 @@ strict digraph {
 	Atom [color=lightblue style=filled]
 	1 [color=maroon style=filled]
 	Atom -> 1
+	statements [color=lightblue style=filled]
+	VarBindingInit [color=lightblue style=filled]
+	statements -> VarBindingInit
+	VarBindingInit [color=lightblue style=filled]
+	bind_name [color=lightblue style=filled]
+	VarBindingInit -> bind_name
+	bind_name [color=lightblue style=filled]
+	y [color=maroon style=filled]
+	bind_name -> y
+	VarBindingInit -> ty_hint
+	ty_hint [color=grey style=filled]
+	VarBindingInit [color=lightblue style=filled]
+	expr [color=lightblue style=filled]
+	VarBindingInit -> expr
+	expr -> Cons
+	Cons [color=lightblue style=filled]
+	"-" [color=maroon style=filled]
+	Cons -> "-"
+	Cons [color=lightblue style=filled]
+	Atom [color=lightblue style=filled]
+	Cons -> Atom
+	Atom [color=lightblue style=filled]
+	23 [color=maroon style=filled]
+	Atom -> 23
+	Cons [color=lightblue style=filled]
+	Atom [color=lightblue style=filled]
+	Cons -> Atom
+	Atom [color=lightblue style=filled]
+	12 [color=maroon style=filled]
+	Atom -> 12
+	statements [color=lightblue style=filled]
+	VarBindingMut [color=lightblue style=filled]
+	statements -> VarBindingMut
+	VarBindingMut [color=lightblue style=filled]
+	bind_name [color=lightblue style=filled]
+	VarBindingMut -> bind_name
+	bind_name [color=lightblue style=filled]
+	y [color=maroon style=filled]
+	bind_name -> y
+	VarBindingMut [color=lightblue style=filled]
+	expr [color=lightblue style=filled]
+	VarBindingMut -> expr
+	expr -> Cons
+	Cons [color=lightblue style=filled]
+	"-" [color=maroon style=filled]
+	Cons -> "-"
+	Cons [color=lightblue style=filled]
+	Atom [color=lightblue style=filled]
+	Cons -> Atom
+	Atom [color=lightblue style=filled]
+	23 [color=maroon style=filled]
+	Atom -> 23
+	Cons [color=lightblue style=filled]
+	Atom [color=lightblue style=filled]
+	Cons -> Atom
+	Atom [color=lightblue style=filled]
+	32 [color=maroon style=filled]
+	Atom -> 32
 	block -> expression
 	expression [color=grey style=filled]
 }

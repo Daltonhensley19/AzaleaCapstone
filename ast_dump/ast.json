@@ -1,6 +1,41 @@
 {
   "declarations": [
     {
+      "Choice": {
+        "name": {
+          "raw_content": "Color"
+        },
+        "variants": [
+          {
+            "raw_content": "Red"
+          },
+          {
+            "raw_content": "Green"
+          },
+          {
+            "raw_content": "Blue"
+          }
+        ]
+      }
+    },
+    {
+      "Struct": {
+        "name": {
+          "raw_content": "Person"
+        },
+        "typed_fields": [
+          [
+            {
+              "raw_content": "age"
+            },
+            {
+              "raw_content": "int"
+            }
+          ]
+        ]
+      }
+    },
+    {
       "Function": {
         "signature": {
           "func_name": {
@@ -26,6 +61,59 @@
                     "Atom": {
                       "raw_content": "1"
                     }
+                  }
+                }
+              },
+              {
+                "VarBindingInit": {
+                  "bind_name": {
+                    "raw_content": "y"
+                  },
+                  "ty_hint": null,
+                  "expr": {
+                    "Cons": [
+                      {
+                        "raw_content": "-"
+                      },
+                      [
+                        {
+                          "Atom": {
+                            "raw_content": "23"
+                          }
+                        },
+                        {
+                          "Atom": {
+                            "raw_content": "12"
+                          }
+                        }
+                      ]
+                    ]
+                  }
+                }
+              },
+              {
+                "VarBindingMut": {
+                  "bind_name": {
+                    "raw_content": "y"
+                  },
+                  "expr": {
+                    "Cons": [
+                      {
+                        "raw_content": "-"
+                      },
+                      [
+                        {
+                          "Atom": {
+                            "raw_content": "23"
+                          }
+                        },
+                        {
+                          "Atom": {
+                            "raw_content": "32"
+                          }
+                        }
+                      ]
+                    ]
                   }
                 }
               }

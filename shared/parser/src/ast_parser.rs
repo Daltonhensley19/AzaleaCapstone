@@ -1063,26 +1063,39 @@ impl Parser<'_> {
             let Some((ident_tok, ty_tok)) = self.try_optional_consume_typed_ident()?
             else
             {
-                return Ok(None);
+                // If we have a structure with no fields, just return None
+                if consumed_ty_idents.is_empty()
+                {
+                    return Ok(None);
+                }
+
+                // Else, return what we have parsed so far and move on from 
+                // structure parsing.
+                return Ok(Some(consumed_ty_idents));
             };
 
-            // Make sure we have a seperator
-            let curr_tok = self.optional_consume(&[Sep]);
+            // Make sure we have a seperator between structure fields.
+            // We use a `peek` to manually increment parser cursor.
+            let curr_tok = self.try_peek(&[Sep, RBracket])?;
 
             // Store typed ident and go to top of loop to get more typed idents
-            if curr_tok.is_some()
+            if curr_tok.is_a(Sep)
             {
                 consumed_ty_idents.push((ident_tok, ty_tok));
+
+                // Advance to next token in stream to parse next struct field
+                self.increment_parser_pos_by(1);
 
                 continue 'build_ty_idents;
             }
 
-            // Move parser index to next token
-            //self.advance_parser_pos();
-
-            // If there is not a comma seperator, stop parsing typed idents
-            if curr_tok.is_none()
+            // If there is not a comma seperator, stop parsing typed idents.
+            // No need to advance parser cursor here since it is done inside the 
+            // `self.parse_struct_declaration()` method!
+            if curr_tok.is_a(RBracket)
             {
+                consumed_ty_idents.push((ident_tok, ty_tok));
+
                 break 'build_ty_idents;
             }
         }

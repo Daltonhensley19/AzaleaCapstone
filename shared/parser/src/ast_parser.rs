@@ -91,8 +91,14 @@ impl Parser<'_> {
 }
 
 impl Parser<'_> {
-    pub fn parse(&self) -> Result<ast::Program, ParserError> {
+    pub fn parse(&self, verbose: bool) -> Result<ast::Program, ParserError> {
         let declarations = self.parse_declarations()?;
+
+        if verbose 
+        {
+            println!("[Generated AST]:");
+            dbg!(&declarations);
+        }
 
         Ok(ast::Program::new(declarations))
     }

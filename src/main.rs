@@ -18,6 +18,12 @@ struct Args {
     /// Name of the path to the source file
     #[arg(short, long)]
     source_path: String,
+
+    #[arg(long)]
+    verbose_lex: bool,
+
+    #[arg(long)]
+    verbose_parse: bool
 }
 
 fn source_file_to_string<P: AsRef<Path>>(path: P) -> std::io::Result<String> {
@@ -91,7 +97,7 @@ fn run_compiler() -> anyhow::Result<()> {
 
     // Tokenize the source file; fail fast on error
     println!("[2/4] Tokenizing source...");
-    let tokens = lexer.lex()?;
+    let tokens = lexer.lex(args.verbose_lex)?;
 
     // Create `Parser` using the tokens
     let path   = std::path::Path::new(path);
@@ -99,14 +105,11 @@ fn run_compiler() -> anyhow::Result<()> {
 
     // Parse tokens into the abstract syntax tree with `parser`
     println!("[3/4] Parsing tokens...");
-    let ast = parser.parse()?;
+    let ast = parser.parse(args.verbose_parse)?;
 
     // Seralize AST to disk for analysis (can be disabled!)
     #[cfg(feature = "serialize")]
     seralize_ast_to_path(&ast, "ast_dump/ast.json")?;
-
-    println!("{ast:#?}");
-    
 
     Ok(())
 }

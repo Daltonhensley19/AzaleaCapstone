@@ -594,7 +594,7 @@ impl Lexer {
         }
     }
 
-    pub fn lex(&mut self) -> Result<Vec<Token>, LexError> {
+    pub fn lex(&mut self, verbose_mode: bool) -> Result<Vec<Token>, LexError> {
         // Get raw characters from the loaded source file
         let mut file_chars = &self.source_content;
 
@@ -864,7 +864,12 @@ impl Lexer {
 
                tokens.push(eof_tok);
             }
-
+            
+            if verbose_mode 
+            {
+                println!("[Generated Token Stream]:");
+                dbg!(&tokens);
+            }
 
             Ok(tokens)
         }

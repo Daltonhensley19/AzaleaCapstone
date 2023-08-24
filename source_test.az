@@ -1,11 +1,8 @@
-Person :: structure {
-    age  :: int,
-    name :: text
-}
-
-main :: ()
+main :: () -> int
 main = {
-	
+    let x <- 2 - 1;
+
+    x
 }
 
                                                                                                                                                                                                                                                                                                                                                                                                                                     

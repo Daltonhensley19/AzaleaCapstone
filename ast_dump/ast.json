@@ -1,48 +1,15 @@
 {
   "declarations": [
     {
-      "Choice": {
-        "name": {
-          "raw_content": "Color"
-        },
-        "variants": [
-          {
-            "raw_content": "Red"
-          },
-          {
-            "raw_content": "Green"
-          },
-          {
-            "raw_content": "Blue"
-          }
-        ]
-      }
-    },
-    {
-      "Struct": {
-        "name": {
-          "raw_content": "Person"
-        },
-        "typed_fields": [
-          [
-            {
-              "raw_content": "age"
-            },
-            {
-              "raw_content": "int"
-            }
-          ]
-        ]
-      }
-    },
-    {
       "Function": {
         "signature": {
           "func_name": {
             "raw_content": "main"
           },
           "ty_list": null,
-          "ty_ret": null
+          "ty_ret": {
+            "raw_content": "int"
+          }
         },
         "definition": {
           "func_name": {
@@ -58,19 +25,6 @@
                   },
                   "ty_hint": null,
                   "expr": {
-                    "Atom": {
-                      "raw_content": "1"
-                    }
-                  }
-                }
-              },
-              {
-                "VarBindingInit": {
-                  "bind_name": {
-                    "raw_content": "y"
-                  },
-                  "ty_hint": null,
-                  "expr": {
                     "Cons": [
                       {
                         "raw_content": "-"
@@ -78,38 +32,12 @@
                       [
                         {
                           "Atom": {
-                            "raw_content": "23"
+                            "raw_content": "2"
                           }
                         },
                         {
                           "Atom": {
-                            "raw_content": "12"
-                          }
-                        }
-                      ]
-                    ]
-                  }
-                }
-              },
-              {
-                "VarBindingMut": {
-                  "bind_name": {
-                    "raw_content": "y"
-                  },
-                  "expr": {
-                    "Cons": [
-                      {
-                        "raw_content": "-"
-                      },
-                      [
-                        {
-                          "Atom": {
-                            "raw_content": "23"
-                          }
-                        },
-                        {
-                          "Atom": {
-                            "raw_content": "32"
+                            "raw_content": "1"
                           }
                         }
                       ]
@@ -118,7 +46,11 @@
                 }
               }
             ],
-            "expression": null
+            "expression": {
+              "Atom": {
+                "raw_content": "x"
+              }
+            }
           }
         }
       }

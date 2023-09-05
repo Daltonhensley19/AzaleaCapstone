@@ -58,26 +58,37 @@ pub struct Block {
 }
 
 #[derive(Serialize, Debug, new)]
+pub enum RValue {
+    Expr(Option<Expression>),
+    List(Vec<Option<Expression>>),
+    Struct((Token, Vec<Option<Expression>>))
+}
+
+#[derive(Serialize, Debug, new)]
 pub enum Statement {
     VarBindingInit {
         bind_name: Token,
         ty_hint: Option<Type>,
 
-        expr: Expression,
+        rhs: RValue,
     },
+
     VarBindingMut {
         bind_name: Token,
         expr: Expression,
     },
+
     Selection {
         if_comp: IfComp,
         elif_comp: Option<ElifComp>,
         else_comp: Option<ElseComp>,
     },
+
     IndefiniteLoop {
         expr: Expression,
         block: Block,
     },
+
     DefiniteLoop {
         index_name: Token,
         low_bound: Token,

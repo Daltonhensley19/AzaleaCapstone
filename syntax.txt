@@ -28,10 +28,6 @@ choice Color {
     Blue
 }
 
-impl Dog {
-    
-}
-
 main :: () 
 {
     let ret <- addTwo(2, 1); 

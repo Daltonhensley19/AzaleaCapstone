@@ -11,7 +11,7 @@ use preprocessor::preprocessor::Preprocessor;
 use clap::Parser as ClapParser;
 
 
-/// Simple program to greet a person
+/// Azalea compiler (Dalton's capstone)
 #[derive(ClapParser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {

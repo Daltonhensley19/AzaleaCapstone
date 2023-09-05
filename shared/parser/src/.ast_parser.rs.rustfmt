@@ -503,13 +503,9 @@ impl Parser<'_> {
         let mut rhs;
         if _l_bracket.is_some()
         {
-            self.increment_parser_pos_by(1);
-
-            let min_binding_power = 0;
-            rhs = Vec::new();
+            let mut min_binding_power = 0;
             
-            'parse_list: loop 
-            {
+            'parse_list: loop {
 
                 // Hit the end of the list 
                 if self.optional_peek(&[RSBracket]).is_some()
@@ -517,110 +513,51 @@ impl Parser<'_> {
                     self.increment_parser_pos_by(1);
                     self.try_consume(&[Semicolon])?;
 
-                   break 'parse_list;
+                    break 'parse_list; 
+                }
+
+                // Hit a comma seperator 
+                if self.optional_peek(&[Sep]).is_some()
+                {
+                    self.increment_parser_pos_by(1);
+                    
+                    continue 'parse_list'; 
                 }
 
                 // Try to parse element expression in list 
-                rhs.push(self.parse_expression(min_binding_power)?);
+                rhs = Vec::new();
+                 
 
-                // Hit a comma seperator 
-                if self.optional_peek(&[Sep]).is_some()
-                {
-                    self.increment_parser_pos_by(1);
-                    
-                    continue 'parse_list; 
-                } 
-                else 
-                {
-                    self.try_consume(&[RSBracket])?;
-                    break 'parse_list;
-                }
             }
-
-            let _semicolon = self.try_consume(&[Semicolon])?;
-            return Ok(ast::Statement::new_var_binding_init(
-                var_bind_name,
-                ty_hint,
-                ast::RValue::new_list(rhs),
-            ));
-        } 
-        else if self.optional_peek(&[Ident]).is_some() 
-            && self.optional_peek_next(&[LParn]).is_some()
-        {
-            let struct_init_name = self.try_consume(&[Ident])?;
-            self.increment_parser_pos_by(1);
-
-            let min_binding_power = 0;
-            rhs = Vec::new();
-            
-            'parse_struct_init: loop 
-            {
-                // Hit the end of the struct init 
-                if self.optional_peek(&[RParn]).is_some()
-                {
-                    self.increment_parser_pos_by(1);
-                    self.try_consume(&[Semicolon])?;
-
-                   break 'parse_struct_init;
-                }
-
-                // Try to parse struct init parm
-                rhs.push(self.parse_expression(min_binding_power)?);
-
-                // Hit a comma seperator 
-                if self.optional_peek(&[Sep]).is_some()
-                {
-                    self.increment_parser_pos_by(1);
-                    
-                    continue 'parse_struct_init; 
-                } 
-                else 
-                {
-                    self.try_consume(&[RParn])?;
-                    break 'parse_struct_init;
-                }
-            }
-
-            let _semicolon = self.try_consume(&[Semicolon])?;
-            return Ok(ast::Statement::new_var_binding_init(
-                var_bind_name,
-                ty_hint,
-                ast::RValue::new_struct((struct_init_name, rhs)),
-            ));
-
-        }
-        else 
-        {
-            let min_binding_power = 0;
-            let rhs = self.parse_expression(min_binding_power)?;
-
-            println!("S-Expr: `{rhs}`", rhs=rhs.clone().unwrap());
-
-            if rhs.is_none()
-            {
-                // Fancy compiler error
-                // Print fancy compiler error
-                ParserErrorReporter::var_bind_missing_rhs(
-                    &var_bind_name,
-                    self.path.to_str().unwrap(),
-                    self.cleaned_source,
-                    var_bind_name.get_file_index(),
-                );
-
-                return Err(ParserError::ParseFail);
-            };
-
-            let _semicolon = self.try_consume(&[Semicolon])?;
-
-            Ok(ast::Statement::new_var_binding_init(
-                var_bind_name,
-                ty_hint,
-                ast::RValue::new_expr(rhs),
-            ))
         }
 
 
-        
+        let min_binding_power = 0;
+        let rhs = self.parse_expression(min_binding_power)?;
+
+        println!("S-Expr: `{rhs}`", rhs=rhs.clone().unwrap());
+
+        if rhs.is_none()
+        {
+            // Fancy compiler error
+            // Print fancy compiler error
+            ParserErrorReporter::var_bind_missing_rhs(
+                &var_bind_name,
+                self.path.to_str().unwrap(),
+                self.cleaned_source,
+                var_bind_name.get_file_index(),
+            );
+
+            return Err(ParserError::ParseFail);
+        };
+
+        let _semicolon = self.try_consume(&[Semicolon])?;
+
+        Ok(ast::Statement::new_var_binding_init(
+            var_bind_name,
+	    ty_hint,
+            rhs.unwrap(),
+        ))
     }
 
     fn parse_var_binding_mutation(&self) -> Result<ast::Statement, ParserError> {
@@ -632,7 +569,7 @@ impl Parser<'_> {
 
         let _assign_op = self.try_consume(&[Assign])?;
 
-        let min_binding_power = 0;
+	let min_binding_power = 0;
         let rhs = self.parse_expression(min_binding_power)?;
 
         if rhs.is_none()
@@ -662,7 +599,7 @@ impl Parser<'_> {
 
 	// Note: binding power gives us precedence AND associatvity 
 	match op {
-            tok if tok.is_a(Minus) => ((), 15),
+            tok if tok.is_a(Minus) => ((), 13),
             bad_tok => panic!("Unsupported op: {:?}", bad_tok)
 	}
     }
@@ -672,20 +609,18 @@ impl Parser<'_> {
 
 	// Note: binding power gives us precedence AND associatvity 
 	let infix_bp = match op {
-            tok if tok.is_a(OrKw)       => (1, 2),
-            tok if tok.is_a(AndKw)      => (3, 4),
-            tok if tok.is_a(Eq)         => (5, 6),
-            tok if tok.is_a(Lt)         => (5, 6),
-            tok if tok.is_a(Lte)        => (5, 6),
-            tok if tok.is_a(Gt)         => (5, 6),
-            tok if tok.is_a(Gte)        => (5, 6),
-            tok if tok.is_a(Plus)       => (7, 8),
-            tok if tok.is_a(Minus)      => (7, 8),
-            tok if tok.is_a(Mul)        => (9, 10),
-            tok if tok.is_a(Div)        => (9, 10),
-            tok if tok.is_a(AsKw)       => (11, 12),
-            tok if tok.is_a(RecordDot)  => (13, 14),
-            tok if tok.is_a(TQualifer)  => (13, 14),
+            tok if tok.is_a(OrKw)  => (1, 2),
+            tok if tok.is_a(AndKw) => (3, 4),
+            tok if tok.is_a(Eq)    => (5, 6),
+            tok if tok.is_a(Lt)    => (5, 6),
+            tok if tok.is_a(Lte)   => (5, 6),
+            tok if tok.is_a(Gt)    => (5, 6),
+            tok if tok.is_a(Gte)   => (5, 6),
+            tok if tok.is_a(Plus)  => (7, 8),
+            tok if tok.is_a(Minus) => (7, 8),
+            tok if tok.is_a(Mul)   => (9, 10),
+            tok if tok.is_a(Div)   => (9, 10),
+	    tok if tok.is_a(AsKw)  => (11, 12),
             bad_tok => panic!("Unsupported op: {:?}", bad_tok)
 	};
 
@@ -697,7 +632,7 @@ impl Parser<'_> {
 
 	// Note: binding power gives us precedence AND associatvity 
 	let postfix_bp = match op {
-            tok if tok.is_a(LSBracket) => (17, ()),
+            tok if tok.is_a(LSBracket) => (15, ()),
             _ => return None,
 	};
 
@@ -712,12 +647,11 @@ impl Parser<'_> {
 	let op_kind    = &[Minus]; 
 	let ty_kind    = &[Ident, FloatTy, IntTy, BoolTy, TextTy];
 	let value_kind = &[BoolLit, NumLit, FloatLit];
-	let punc_kind  = &[RBracket, Semicolon, LParn, Sep];
+	let punc_kind  = &[RBracket, Semicolon, LParn];
 	let all_kind   = &[&op_kind[..], &ty_kind[..], &value_kind[..], &punc_kind[..]].concat();
 	let mut lhs = match self.try_consume(&all_kind)? {
             good_tok if good_tok.is_a(RBracket)  => {self.decrement_parser_pos_by(1); return Ok(None);},
 	    good_tok if good_tok.is_a(Semicolon) => {self.decrement_parser_pos_by(1); return Ok(None);},
-	    good_tok if good_tok.is_a(Sep) => {self.decrement_parser_pos_by(1); return Ok(None);},
 	    // `(` Expression `)` support 
 	    good_tok if good_tok.is_a(LParn) => {
 		let min_bp = 0;
@@ -745,8 +679,8 @@ impl Parser<'_> {
 	loop {
 	    
 	    // Parse operator of expression (if found)
-	    let op_kind   = &[Plus, Minus, Div, Mul, Lt, Lte, Gt, Gte, Eq, OrKw, AndKw, AsKw, RecordDot, TQualifer]; 
-	    let punc_kind = &[LSBracket, RSBracket,RParn, LBracket, RBracket, Semicolon, Sep];
+	    let op_kind   = &[Plus, Minus, Div, Mul, Lt, Lte, Gt, Gte, Eq, OrKw, AndKw, AsKw]; 
+	    let punc_kind = &[LSBracket, RSBracket,RParn, LBracket, RBracket, Semicolon];
 	    let all_kind  = &[&op_kind[..], &punc_kind[..]].concat();
             let op = match self.try_peek(&all_kind)? {
 		tok if tok.is_a(EOF) => break,
@@ -758,7 +692,6 @@ impl Parser<'_> {
 		tok if tok.is_a(RParn) => break,
 		tok if tok.is_a(LBracket) => break,
 		tok if tok.is_a(RBracket) => break,
-		tok if tok.is_a(Sep) => break,
 		bad_tok => panic!("unsupported token: {:?}", bad_tok),
             };
 

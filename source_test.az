@@ -1,8 +1,28 @@
-main :: () -> int
-main = {
-    let x <- 2 - 1;
+// Show support for as style type casting 
+// Show support for list indexing support
 
-    x
+/* this is a comment */
+
+Color :: choice {
+    Red,
+    Green,
+    Blue
+}
+
+Person :: structure {
+    name :: text,
+    age :: int
+}
+
+main :: () 
+main = {
+
+    let x <- [1, dog, cat, 3];
+    let z <- Person(2, cat, dog, name);
+
+    let t1 <- z.age;
+    let x1 <- Color::Red;
+
 }
 
                                                                                                                                                                                                                                                                                                                                                                                                                                     

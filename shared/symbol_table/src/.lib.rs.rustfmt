@@ -1,0 +1,111 @@
+#![allow(dead_code)]
+
+use std::cell::Cell;
+
+use lexer::token::Token;
+
+#[derive(Clone, PartialEq, Eq, Debug, Copy)]
+pub enum SymbolKind {
+    FuncCall, 
+    Global, 
+    PrimVar,
+    StructVar,
+    ListVar,
+    ChoiceVar,
+    ForLoopIndex,
+    FuncParm,
+}
+
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Primitve {
+    U32,
+    F32,
+    Bool,
+    Text
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Type {
+    Prim(Primitve),
+    Struct,
+    Choice,
+    Func,
+    List(Primitve),
+    Undetermined
+}
+
+#[derive(Debug)]
+pub struct SymbolNode {
+    sym_name:         Token,
+    sym_ty:           Type,
+    sym_kind:         Cell<SymbolKind>,
+    sym_scope_depth:  usize,
+    sym_scope_breath: usize,
+}
+
+
+impl SymbolNode {
+    pub fn new(sym_name: Token, sym_ty: Type, sym_scope_depth: usize, sym_scope_breath: usize) -> Self {
+
+        SymbolNode {
+            sym_name,
+            sym_ty: sym_ty.clone(),
+            sym_kind: Cell::new(Self::determine_sym_kind(sym_ty)),
+            sym_scope_depth,
+            sym_scope_breath
+        }
+    }
+
+
+    fn determine_sym_kind(sym_ty: Type) -> SymbolKind {
+        match sym_ty 
+        {
+            Type::Prim(_) => SymbolKind::PrimVar,
+            Type::Struct => SymbolKind::StructVar,
+            Type::Choice => SymbolKind::ChoiceVar,
+            Type::Func => SymbolKind::FuncCall,
+            Type::List(_) => SymbolKind::ListVar,
+            Type::Undetermined => SymbolKind::PrimVar
+        }
+    }
+    
+    pub fn refine_sym_kind_to(&self, sym_kind: SymbolKind) {
+       self.sym_kind.set(sym_kind); 
+    } 
+}
+
+#[derive(Debug)]
+pub struct SymbolTable {
+    nodes: Vec<SymbolNode>
+}
+
+impl SymbolTable {
+    pub fn new() -> Self {
+        Self {
+            nodes: Vec::new()
+        }
+    }
+
+    pub fn push(&mut self, node: SymbolNode) {
+        self.nodes.push(node)
+    }
+}
+
+
+pub fn check_for_dup_funcs_syms(st: &SymbolTable) {
+    for symbol_node in st.nodes.iter().filter(|sn| sn.sym_ty == Type::Func) {
+        println!("{symbol_node:?}");
+        
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+    }
+}

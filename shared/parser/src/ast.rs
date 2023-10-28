@@ -9,15 +9,35 @@ use lexer::token::Token;
 use derive_new::new;
 use serde::Serialize;
     
-#[derive(Serialize, Debug, new)]
-pub struct Type(pub Token);
+#[derive(Serialize, Debug, Clone, new)]
+pub struct TypeTok(pub Token);
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone ,new)]
 pub struct Program {
-    declarations: Option<Vec<Declaration>>,
+    pub declarations: Option<Vec<Declaration>>,
 }
 
-#[derive(Serialize, Debug, new)]
+//impl Program {
+    //pub fn get_mut_var_binds(&self) -> Option<Vec<Statement>> {
+        //let mut_var_binds = Vec::new();
+
+        //if self.declarations.is_none() {
+            //return None;
+        //}
+
+        //for decl in self.declarations.unwrap() {
+            
+            ////if let Declaration::Function { _signature, definition } = decl {
+                ////mut_var_binds.push(definition.block)
+
+            ////}
+
+        //} 
+
+    //} 
+//}
+
+#[derive(Serialize, Debug, Clone, new)]
 pub enum Declaration {
     Function {
         signature: FuncSignature,
@@ -37,38 +57,39 @@ pub enum Declaration {
     },
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct FuncSignature {
     func_name: Token,
     ty_list: Option<Vec<Token>>,
     ty_ret: Option<Token>,
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct FuncDefinition {
     func_name: Token,
     arg_list: Option<Vec<Token>>,
     block: Block,
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct Block {
     statements: Option<Vec<Statement>>,
     expression: Option<Expression>,
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub enum RValue {
     Expr(Option<Expression>),
     List(Vec<Option<Expression>>),
-    Struct((Token, Vec<Option<Expression>>))
+    Struct((Token, Vec<Option<Expression>>)),
+    FuncCall((Token, Vec<Option<Expression>>)),
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub enum Statement {
     VarBindingInit {
         bind_name: Token,
-        ty_hint: Option<Type>,
+        ty_hint: Option<TypeTok>,
 
         rhs: RValue,
     },
@@ -95,21 +116,26 @@ pub enum Statement {
         high_bound: Token,
         block: Block,
     },
+
+    FuncCall {
+        name: Token,
+        args: Vec<Option<Expression>>
+    }
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct IfComp {
     bool_expr: Expression,
     block: Block,
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct ElifComp {
     bool_expr: Expression,
     block: Block,
 }
 
-#[derive(Serialize, Debug, new)]
+#[derive(Serialize, Debug, Clone, new)]
 pub struct ElseComp {
     block: Block,
 }

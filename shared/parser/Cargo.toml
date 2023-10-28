@@ -11,5 +11,7 @@ derive-new = "0.5.9"
 thiserror  = "1.0.41"
 
 lexer   = {path = "../lexer/"}
+symbol_table   = {path = "../symbol_table/"}
 visitor = {path = "../visitor/"}
 serde = { version = "1.0.180", features = ["derive"] }
+derive-visitor = "0.3.0"

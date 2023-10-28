@@ -1,11 +1,12 @@
 use std::{cell::Cell, path::Path};
+use std::collections::BTreeSet;
 
 use crate::ast;
-use crate::ast::Type;
+use crate::ast::TypeTok;
 use crate::errors::{ParserErrorReporter, ParserError};
 
 use lexer::token::{Token, TokenKind};
-
+use symbol_table::{SymbolTable, SymbolNode, Type, SymbolKind};
 
 pub struct Parser<'parser> {
     tokens: Vec<Token>,
@@ -17,6 +18,12 @@ pub struct Parser<'parser> {
     path: &'parser Path,
 
     cleaned_source: &'parser str,
+
+    scope_stream: Vec<Cell<usize>>,
+
+    scope_cursor: Cell<usize>
+
+
 }
 
 /// CTOR for the `Parser`
@@ -27,6 +34,8 @@ impl<'parser> Parser<'parser> {
             pos: Cell::new(0),
             path,
             cleaned_source,
+            scope_stream: vec![0.into(); 256],
+            scope_cursor: 0.into()
         }
     }
 }
@@ -88,11 +97,41 @@ impl Parser<'_> {
 
         self.pos.get() >= stream_size
     }
+
+    fn incre_scope_depth(&self) {
+        self.scope_cursor.set(self.scope_cursor.get() + 1);
+    }
+
+    fn decre_scope_depth(&self) {
+        self.scope_cursor.set(self.scope_cursor.get() - 1);
+    }
+
+    fn incre_scope_bredth(&self) {
+        self.scope_stream[self.scope_cursor.get()]
+            .set(self.scope_stream[self.scope_cursor.get()].get() + 1);
+    }
+
+    fn decre_scope_bredth(&self) {
+        self.scope_stream[self.scope_cursor.get()]
+            .set(self.scope_stream[self.scope_cursor.get()].get() - 1);
+    }
+
+   
+
+    //fn reset_and_save_scope_bredth(&self) {
+        //self.saved_bredth.set(self.scope.1.get());
+        //self.scope.1.set(0);
+    //}
+
+    //fn restore_scope_bredth(&self) {
+        //self.saved_bredth.set(self.scope.1.get());
+        //self.scope.1.set(self.saved_bredth.get());
+    //}
 }
 
 impl Parser<'_> {
-    pub fn parse(&self, verbose: bool) -> Result<ast::Program, ParserError> {
-        let declarations = self.parse_declarations()?;
+    pub fn parse(&self, verbose: bool, sym_table: &mut SymbolTable) -> Result<ast::Program, ParserError> {
+        let declarations = self.parse_declarations(sym_table)?;
 
         if verbose 
         {
@@ -103,7 +142,7 @@ impl Parser<'_> {
         Ok(ast::Program::new(declarations))
     }
 
-    fn parse_declarations(&self) -> Result<Option<Vec<ast::Declaration>>, ParserError> {
+    fn parse_declarations(&self, sym_table: &mut SymbolTable) -> Result<Option<Vec<ast::Declaration>>, ParserError> {
         use TokenKind::*;
         let mut declarations = Vec::new();
 
@@ -140,21 +179,21 @@ impl Parser<'_> {
                         // Reposition stream position
                         self.decrement_parser_pos_by(3);
 
-                        self.parse_struct_declaration()?
+                        self.parse_struct_declaration(sym_table)?
                     }
                     else if decl_tok.is_a(ChoiceKw)
                     {
                         // Reposition stream position
                         self.decrement_parser_pos_by(3);
 
-                        self.parse_choice_declaration()?
+                        self.parse_choice_declaration(sym_table)?
                     }
                     else
                     {
                         // Reposition stream position
                         self.decrement_parser_pos_by(3);
-
-                        self.parse_function_declaration()?
+                        
+                        self.parse_function_declaration(sym_table)?
                     }
                 }
 
@@ -168,7 +207,7 @@ impl Parser<'_> {
         Ok(Some(declarations))
     }
 
-    fn parse_choice_declaration(&self) -> Result<ast::Declaration, ParserError> {
+    fn parse_choice_declaration(&self, sym_table: &mut SymbolTable) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
 
         // Get choice name
@@ -189,10 +228,19 @@ impl Parser<'_> {
         // Check for closing right bracket for choice
         let _choice_r_bracket = self.try_consume(&[RBracket])?;
 
+        // Create symbol node
+        let choice_sym_node = SymbolNode::new(choice_name.clone(), Type::Choice, 
+                                              self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+        choice_sym_node.refine_sym_kind_to(SymbolKind::Global);
+
+        // Update Symbol Table 
+        sym_table.push(choice_sym_node);
+
+
         Ok(ast::Declaration::new_choice(choice_name, choice_variants))
     }
 
-    fn parse_struct_declaration(&self) -> Result<ast::Declaration, ParserError> {
+    fn parse_struct_declaration(&self, sym_table: &mut SymbolTable) -> Result<ast::Declaration, ParserError> {
         use TokenKind::*;
 
         // Get structure name
@@ -213,12 +261,20 @@ impl Parser<'_> {
         // Check for closing right bracket for structure (i.e. `}`)
         let _struct_r_bracket = self.try_consume(&[RBracket])?;
 
+        // Create symbol node
+        let struct_sym_node = SymbolNode::new(struct_name.clone(), Type::Struct, 
+                                              self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+        struct_sym_node.refine_sym_kind_to(SymbolKind::Global);
+
+        // Update Symbol Table 
+        sym_table.push(struct_sym_node);
+
         Ok(ast::Declaration::new_struct(struct_name, struct_fields))
     }
 
-    fn parse_function_declaration(&self) -> Result<ast::Declaration, ParserError> {
-        let function_signature = self.parse_function_signature()?;
-        let function_definition = self.parse_function_definition()?;
+    fn parse_function_declaration(&self, sym_table: &mut SymbolTable) -> Result<ast::Declaration, ParserError> {
+        let function_signature = self.parse_function_signature(sym_table)?;
+        let function_definition = self.parse_function_definition(sym_table)?;
 
         Ok(ast::Declaration::new_function(
             function_signature,
@@ -226,7 +282,7 @@ impl Parser<'_> {
         ))
     }
 
-    fn parse_function_signature(&self) -> Result<ast::FuncSignature, ParserError> {
+    fn parse_function_signature(&self, sym_table: &mut SymbolTable) -> Result<ast::FuncSignature, ParserError> {
         use TokenKind::*;
 
         // Get name of function (e.g identifier)
@@ -252,11 +308,20 @@ impl Parser<'_> {
 
         // Consume either both return arrow and type, or neither (they can be omitted together)
         let (_r_arrow, ret_ty) = self.try_consume2_or_none(&[RetArrow], types)?;
+        
+    
+        // Create symbol node
+        let func_sym_node = SymbolNode::new(func_name.clone(), Type::Func, 
+                                            self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+        func_sym_node.refine_sym_kind_to(SymbolKind::Global);
+
+        // Update Symbol Table 
+        sym_table.push(func_sym_node);
 
         Ok(ast::FuncSignature::new(func_name, func_input_tys, ret_ty))
     }
 
-    fn parse_function_definition(&self) -> Result<ast::FuncDefinition, ParserError> {
+    fn parse_function_definition(&self, sym_table: &mut SymbolTable) -> Result<ast::FuncDefinition, ParserError> {
         use TokenKind::*;
 
         // Get name of function (e.g identifier)
@@ -269,29 +334,33 @@ impl Parser<'_> {
         let _func_def_op = self.try_consume(&[FnDef])?;
 
         // Parse out `Block`
-        let block = self.parse_block()?;
+        let block = self.parse_block(sym_table)?;
 
         Ok(ast::FuncDefinition::new(func_name, func_params, block))
     }
 
-    fn parse_block(&self) -> Result<ast::Block, ParserError> {
-	use TokenKind::*;
-	
-	let _block_open       = self.try_consume(&[LBracket])?;
-        let statements        = self.parse_statements()?;
-	let min_binding_power = 0;
+    fn parse_block(&self, sym_table: &mut SymbolTable) -> Result<ast::Block, ParserError> {
+        use TokenKind::*;
+        
+        self.incre_scope_depth();
+        let _block_open       = self.try_consume(&[LBracket])?;
+        let statements        = self.parse_statements(sym_table)?;
+        let min_binding_power = 0;
         let expression        = self.parse_expression(min_binding_power)?;
         
         if expression.is_some()
         {
             println!("S-Expr: {expr}", expr=expression.clone().unwrap());
         }
-	let _block_close      = self.try_consume(&[RBracket])?;
+
+        let _block_close      = self.try_consume(&[RBracket])?;
+        self.incre_scope_bredth();
+        self.decre_scope_depth();
 
         Ok(ast::Block::new(statements, expression))
     }
 
-    fn parse_statements(&self) -> Result<Option<Vec<ast::Statement>>, ParserError> {
+    fn parse_statements(&self, sym_table: &mut SymbolTable) -> Result<Option<Vec<ast::Statement>>, ParserError> {
         use TokenKind::*;
 
         let mut statements = Vec::new();
@@ -302,12 +371,12 @@ impl Parser<'_> {
             // See what the statement starts with to determine what it is.
             // `Ident` is allowed since we could be parsing `VarBindingMut`.
             let curr_token = self.optional_peek(&[IfKw,
-						  WhileKw,
-						  ForKw,
-						  LetKw,
-						  StructKw,
-						  ChoiceKw,
-						  Ident]);
+                                                  WhileKw,
+                                                  ForKw,
+                                                  LetKw,
+                                                  StructKw,
+                                                  ChoiceKw,
+                                                  Ident]);
 
             // No statements to parse
             if curr_token.is_none() && statements.is_empty()
@@ -326,14 +395,18 @@ impl Parser<'_> {
             // Parse statement
             let statement = match curr_token.get_token_kind()
             {
-                LetKw   => self.parse_var_binding_init()?,
-                IfKw    => self.parse_selection()?,
-                WhileKw => self.parse_indefinite_loop()?,
-                ForKw   => self.parse_definite_loop()?,
+                LetKw   => self.parse_var_binding_init(sym_table)?,
+                IfKw    => self.parse_selection(sym_table)?,
+                WhileKw => self.parse_indefinite_loop(sym_table)?,
+                ForKw   => self.parse_definite_loop(sym_table)?,
                 // Parse `VarBindingMut` if current is `Ident` and next is `<-`
                 Ident if self.optional_peek_next(&[Assign]).is_some() =>
                 {
                     self.parse_var_binding_mutation()?
+                }
+                Ident if self.optional_peek_next(&[LParn]).is_some() =>
+                {
+                    self.parse_func_call()?
                 }
                 // @todo: Add support for `struct` and `choice` decls
                 _ if statements.is_empty() => return Ok(None),
@@ -347,72 +420,133 @@ impl Parser<'_> {
         Ok(Some(statements))
     }
 
-    fn parse_definite_loop(&self) -> Result<ast::Statement, ParserError> {
-	use TokenKind::*;
+    fn parse_func_call(&self) -> Result<ast::Statement, ParserError> {
+        use TokenKind::*;
 
-	// Parse for-loop
+        //let _let_kw = self.try_consume(&[LetKw])?;
+
+        //let var_bind_name = self.try_consume(&[Ident])?;
+
+        // Try to see if user supplied ty-hint and get it.
+        // We either have `("::", ty_hint)` or `(None, None)` or error.
+        //let types = &[Ident, IntTy, FloatTy, TextTy, BoolTy];
+        //let (_t_qualifier, ty_hint) = self.try_consume2_or_none(&[TQualifer], types)?;
+
+        // If hint was supplied, we have `Some(type_hint)`. Otherwise, `None`.
+        //let ty_hint = if ty_hint.is_some() { Some(Type(ty_hint.unwrap())) } else { None };
+	
+        //let _assign_op = self.try_consume(&[Assign])?;
+
+        // Check for `[`, as we might have a list 
+        //let _l_bracket = self.optional_peek(&[LSBracket]);
+        
+        // We have a list to parse
+        let mut args;
+    
+        let func_call_name = self.try_consume(&[Ident])?;
+        self.increment_parser_pos_by(1);
+
+        let min_binding_power = 0;
+        args = Vec::new();
+            
+        'parse_func_call: loop 
+        {
+            // Hit the end of the struct init 
+            if self.optional_peek(&[RParn]).is_some()
+            {
+                self.increment_parser_pos_by(1);
+                self.try_consume(&[Semicolon])?;
+
+               break 'parse_func_call;
+            }
+
+            // Try to parse struct init parm
+            args.push(self.parse_expression(min_binding_power)?);
+
+            // Hit a comma seperator 
+            if self.optional_peek(&[Sep]).is_some()
+            {
+                self.increment_parser_pos_by(1);
+                
+                continue 'parse_func_call; 
+            } 
+            else 
+            {
+                self.try_consume(&[RParn])?;
+                break 'parse_func_call;
+            }
+        }
+
+        let _semicolon = self.try_consume(&[Semicolon])?;
+        Ok(ast::Statement::new_func_call(func_call_name, args))
+    }
+
+    fn parse_definite_loop(&self, sym_table: &mut SymbolTable) -> Result<ast::Statement, ParserError> {
+        use TokenKind::*;
+
+        // Parse for-loop
         let _for_kw        = self.try_consume(&[ForKw])?;
         let for_index      = self.try_consume(&[Ident])?;
         let _in_kw         = self.try_consume(&[InKw])?;
         let for_low_bound  = self.try_consume(&[NumLit])?;
         let _for_range     = self.try_consume(&[ExRange])?;
         let for_high_bound = self.try_consume(&[NumLit])?;
-	let for_block      = self.parse_block()?;
+        let for_block      = self.parse_block(sym_table)?;
 
         Ok(ast::Statement::new_definite_loop(for_index, for_low_bound, for_high_bound, for_block))
     }
     
-    fn parse_indefinite_loop(&self) -> Result<ast::Statement, ParserError> {
-	use TokenKind::*;
+    fn parse_indefinite_loop(&self, sym_table: &mut SymbolTable) -> Result<ast::Statement, ParserError> {
+        use TokenKind::*;
 
-	// Parse while-loop
+        // Parse while-loop
         let while_kw          = self.try_consume(&[WhileKw])?;
-	let min_binding_power = 0;
-	let Some(while_expr)  = self.parse_expression(min_binding_power)?
-	else
-	{
-	    // Fancy compiler error
-            ParserErrorReporter::missing_expr_at(
-		"while-loop",
-                self.path.to_str().unwrap(),
-                self.cleaned_source,
-                while_kw.get_file_index(),
-            );
+        let min_binding_power = 0;
+        let Some(while_expr)  = self.parse_expression(min_binding_power)?
+        else
+        {
+            // Fancy compiler error
+                ParserErrorReporter::missing_expr_at(
+            "while-loop",
+                    self.path.to_str().unwrap(),
+                    self.cleaned_source,
+                    while_kw.get_file_index(),
+                );
 
-	    return Err(ParserError::ParseFail);
-	};
-	let while_block  = self.parse_block()?;
+            return Err(ParserError::ParseFail);
+        };
+        let while_block  = self.parse_block(sym_table)?;
 
         Ok(ast::Statement::new_indefinite_loop(while_expr, while_block))
     }
 
-    fn parse_selection(&self) -> Result<ast::Statement, ParserError> {
+    fn parse_selection(&self, sym_table: &mut SymbolTable) -> Result<ast::Statement, ParserError> {
         use TokenKind::*;
 
-	// Parse `if-comp` 
-	let if_comp = self.parse_if_comp()?;
+        // Parse `if-comp` 
+        let if_comp = self.parse_if_comp(sym_table)?;
 
-	// Parse `elif-comp` 
-        let elif_comp = self.parse_elif_comp()?;
+        // Parse `elif-comp` 
+        let elif_comp = self.parse_elif_comp(sym_table)?;
 
-	// Parse `else-comp` 
-        let else_comp = self.parse_else_comp()?;
+        // Parse `else-comp` 
+        let else_comp = self.parse_else_comp(sym_table)?;
 
         Ok(ast::Statement::new_selection(if_comp, elif_comp, else_comp))
     }
 
-    fn parse_if_comp(&self) -> Result<ast::IfComp, ParserError> {
-	use TokenKind::*;
+    fn parse_if_comp(&self, sym_table: &mut SymbolTable) -> Result<ast::IfComp, ParserError> {
+        use TokenKind::*;
 
-	// Parse `if-comp`
-	let if_kw             = self.try_consume(&[IfKw])?;
-	let min_binding_power = 0;
-	let Some(if_expr)     = self.parse_expression(min_binding_power)?
-	else
-	{
-	    // Fancy compiler error
-            ParserErrorReporter::missing_expr_at(
-		"if-branch",
+        // Parse `if-comp`
+        let if_kw             = self.try_consume(&[IfKw])?;
+        let min_binding_power = 0;
+        let Some(if_expr)     = self.parse_expression(min_binding_power)?
+        else
+        {
+            // Fancy compiler error
+                ParserErrorReporter::missing_expr_at(
+                "if-branch",
                 self.path.to_str().unwrap(),
                 self.cleaned_source,
                 if_kw.get_file_index(),
@@ -420,66 +554,66 @@ impl Parser<'_> {
 
 	    return Err(ParserError::ParseFail);
 	};
-        let if_block     = self.parse_block()?;
+        let if_block     = self.parse_block(sym_table)?;
         let if_comp      = ast::IfComp::new(if_expr, if_block);
 
         Ok(if_comp)
     }
 
-    fn parse_elif_comp(&self) -> Result<Option<ast::ElifComp>, ParserError> {
+    fn parse_elif_comp(&self, sym_table: &mut SymbolTable) -> Result<Option<ast::ElifComp>, ParserError> {
         use TokenKind::*;
 	
-	let _elif_kw = self.optional_peek(&[ElifKw]);
+        let _elif_kw = self.optional_peek(&[ElifKw]);
 
-	// No `elif` to parse
-	if _elif_kw.is_none()
-	{
-	    return Ok(None);
-	}
+        // No `elif` to parse
+        if _elif_kw.is_none()
+        {
+            return Ok(None);
+        }
 
-	// Parse `elif-comp` 
-	let elif_kw           = self.try_consume(&[ElifKw])?;
-	let min_binding_power = 0; 
-	let Some(elif_expr)   = self.parse_expression(min_binding_power)?
-	else
-	{
-	    // Fancy compiler error
+        // Parse `elif-comp` 
+        let elif_kw           = self.try_consume(&[ElifKw])?;
+        let min_binding_power = 0; 
+        let Some(elif_expr)   = self.parse_expression(min_binding_power)?
+        else
+        {
+            // Fancy compiler error
             ParserErrorReporter::missing_expr_at(
-		"elif-branch",
-                self.path.to_str().unwrap(),
-                self.cleaned_source,
-                elif_kw.get_file_index(),
-            );
+            "elif-branch",
+            self.path.to_str().unwrap(),
+            self.cleaned_source,
+            elif_kw.get_file_index(),
+        );
 
-	    return Err(ParserError::ParseFail);
-	};
-        let elif_block     = self.parse_block()?;
+            return Err(ParserError::ParseFail);
+        };
+        let elif_block     = self.parse_block(sym_table)?;
         let elif_comp      = Some(ast::ElifComp::new(elif_expr, elif_block));
 
-	Ok(elif_comp)
+        Ok(elif_comp)
     }
 
-    fn parse_else_comp(&self) -> Result<Option<ast::ElseComp>, ParserError> {
+    fn parse_else_comp(&self, sym_table: &mut SymbolTable) -> Result<Option<ast::ElseComp>, ParserError> {
         use TokenKind::*;
 	
-	let _else_kw = self.optional_peek(&[ElseKw]);
+        let _else_kw = self.optional_peek(&[ElseKw]);
 
-	// No `else` to parse
-	if _else_kw.is_none()
-	{
-	    return Ok(None);
-	}
+        // No `else` to parse
+        if _else_kw.is_none()
+        {
+            return Ok(None);
+        }
 
-	// Parse `else-comp` 
+        // Parse `else-comp` 
         let _else_kw       = self.try_consume(&[ElseKw])?;
-        let else_block     = self.parse_block()?;
+        let else_block     = self.parse_block(sym_table)?;
         let else_comp      = Some(ast::ElseComp::new(else_block));
 
-	Ok(else_comp)
+        Ok(else_comp)
     }
 
     
-    fn parse_var_binding_init(&self) -> Result<ast::Statement, ParserError> {
+    fn parse_var_binding_init(&self, sym_table: &mut SymbolTable) -> Result<ast::Statement, ParserError> {
         use TokenKind::*;
 
         let _let_kw = self.try_consume(&[LetKw])?;
@@ -492,7 +626,7 @@ impl Parser<'_> {
         let (_t_qualifier, ty_hint) = self.try_consume2_or_none(&[TQualifer], types)?;
 
         // If hint was supplied, we have `Some(type_hint)`. Otherwise, `None`.
-        let ty_hint = if ty_hint.is_some() { Some(Type(ty_hint.unwrap())) } else { None };
+        let ty_hint = if ty_hint.is_some() { Some(TypeTok(ty_hint.unwrap())) } else { None };
 	
         let _assign_op = self.try_consume(&[Assign])?;
 
@@ -537,6 +671,14 @@ impl Parser<'_> {
                 }
             }
 
+            // Create symbol node
+            let var_sym_node = SymbolNode::new(var_bind_name.clone(), Type::Undetermined, 
+                                               self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+            var_sym_node.refine_sym_kind_to(SymbolKind::ListVar);
+
+            // Update Symbol Table 
+            sym_table.push(var_sym_node);
+
             let _semicolon = self.try_consume(&[Semicolon])?;
             return Ok(ast::Statement::new_var_binding_init(
                 var_bind_name,
@@ -545,7 +687,7 @@ impl Parser<'_> {
             ));
         } 
         else if self.optional_peek(&[Ident]).is_some() 
-            && self.optional_peek_next(&[LParn]).is_some()
+            && self.optional_peek_next(&[LBracket]).is_some()
         {
             let struct_init_name = self.try_consume(&[Ident])?;
             self.increment_parser_pos_by(1);
@@ -556,7 +698,7 @@ impl Parser<'_> {
             'parse_struct_init: loop 
             {
                 // Hit the end of the struct init 
-                if self.optional_peek(&[RParn]).is_some()
+                if self.optional_peek(&[RBracket]).is_some()
                 {
                     self.increment_parser_pos_by(1);
                     self.try_consume(&[Semicolon])?;
@@ -576,10 +718,18 @@ impl Parser<'_> {
                 } 
                 else 
                 {
-                    self.try_consume(&[RParn])?;
+                    self.try_consume(&[RBracket])?;
                     break 'parse_struct_init;
                 }
             }
+
+            // Create symbol node
+            let var_sym_node = SymbolNode::new(var_bind_name.clone(), Type::Struct, 
+                                               self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+            var_sym_node.refine_sym_kind_to(SymbolKind::StructVar);
+
+            // Update Symbol Table 
+            sym_table.push(var_sym_node);
 
             let _semicolon = self.try_consume(&[Semicolon])?;
             return Ok(ast::Statement::new_var_binding_init(
@@ -589,6 +739,60 @@ impl Parser<'_> {
             ));
 
         }
+        else if self.optional_peek(&[Ident]).is_some() 
+            && self.optional_peek_next(&[LParn]).is_some()
+        {
+            let func_call_name = self.try_consume(&[Ident])?;
+            self.increment_parser_pos_by(1);
+
+            let min_binding_power = 0;
+            rhs = Vec::new();
+            
+            'parse_func_call: loop 
+            {
+                // Hit the end of the struct init 
+                if self.optional_peek(&[RParn]).is_some()
+                {
+                    self.increment_parser_pos_by(1);
+                    self.try_consume(&[Semicolon])?;
+
+                   break 'parse_func_call;
+                }
+
+                // Try to parse struct init parm
+                rhs.push(self.parse_expression(min_binding_power)?);
+
+                // Hit a comma seperator 
+                if self.optional_peek(&[Sep]).is_some()
+                {
+                    self.increment_parser_pos_by(1);
+                    
+                    continue 'parse_func_call; 
+                } 
+                else 
+                {
+                    self.try_consume(&[RParn])?;
+                    break 'parse_func_call;
+                }
+            }
+
+            // Create symbol node
+            let var_sym_node = SymbolNode::new(var_bind_name.clone(), Type::Undetermined, 
+                                               self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+            var_sym_node.refine_sym_kind_to(SymbolKind::FuncCall);
+
+            // Update Symbol Table 
+            sym_table.push(var_sym_node);
+
+            let _semicolon = self.try_consume(&[Semicolon])?;
+            return Ok(ast::Statement::new_var_binding_init(
+                var_bind_name,
+                ty_hint,
+                ast::RValue::new_func_call((func_call_name, rhs)),
+            ));
+
+        }
+
         else 
         {
             let min_binding_power = 0;
@@ -612,14 +816,20 @@ impl Parser<'_> {
 
             let _semicolon = self.try_consume(&[Semicolon])?;
 
+            // Create symbol node
+            let var_sym_node = SymbolNode::new(var_bind_name.clone(), Type::Undetermined, 
+                                               self.scope_cursor.get(), self.scope_stream[self.scope_cursor.get()].get());
+            var_sym_node.refine_sym_kind_to(SymbolKind::PrimVar);
+
+            // Update Symbol Table 
+            sym_table.push(var_sym_node);
+
             Ok(ast::Statement::new_var_binding_init(
                 var_bind_name,
                 ty_hint,
                 ast::RValue::new_expr(rhs),
             ))
         }
-
-
         
     }
 

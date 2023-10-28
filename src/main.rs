@@ -7,6 +7,9 @@ use lexer::lexer::Lexer;
 use parser::ast_parser::Parser as AstParser;
 use parser::ast;
 use preprocessor::preprocessor::Preprocessor;
+use symbol_table::SymbolTable;
+use symbol_table::{check_for_dup_funcs_syms, check_for_dup_choice_syms, check_for_dup_structs_syms};
+use semantic_analyzer::check_for_missing_varbind;
 
 use clap::Parser as ClapParser;
 
@@ -103,9 +106,19 @@ fn run_compiler() -> anyhow::Result<()> {
     let path   = std::path::Path::new(path);
     let parser = AstParser::new(tokens, path, cleaned_source.as_str());
 
+    // Intialize `SymbolTable`
+    let mut sym_table = SymbolTable::new();
+
     // Parse tokens into the abstract syntax tree with `parser`
     println!("[3/4] Parsing tokens...");
-    let ast = parser.parse(args.verbose_parse)?;
+    let ast = parser.parse(args.verbose_parse, &mut sym_table)?;
+
+    println!("{sym_table:#?}");
+
+    check_for_dup_funcs_syms(&sym_table, path, cleaned_source.as_str())?;
+    check_for_dup_choice_syms(&sym_table, path, cleaned_source.as_str())?;
+    check_for_dup_structs_syms(&sym_table, path, cleaned_source.as_str())?;
+    check_for_missing_varbind(&sym_table, &ast)?;
 
     // Seralize AST to disk for analysis (can be disabled!)
     #[cfg(feature = "serialize")]

@@ -7,9 +7,7 @@
             "raw_content": "main"
           },
           "ty_list": null,
-          "ty_ret": {
-            "raw_content": "int"
-          }
+          "ty_ret": null
         },
         "definition": {
           "func_name": {
@@ -21,36 +19,20 @@
               {
                 "VarBindingInit": {
                   "bind_name": {
-                    "raw_content": "x"
+                    "raw_content": "dog"
                   },
                   "ty_hint": null,
-                  "expr": {
-                    "Cons": [
-                      {
-                        "raw_content": "-"
-                      },
-                      [
-                        {
-                          "Atom": {
-                            "raw_content": "2"
-                          }
-                        },
-                        {
-                          "Atom": {
-                            "raw_content": "1"
-                          }
-                        }
-                      ]
-                    ]
+                  "rhs": {
+                    "Expr": {
+                      "Atom": {
+                        "raw_content": "2"
+                      }
+                    }
                   }
                 }
               }
             ],
-            "expression": {
-              "Atom": {
-                "raw_content": "x"
-              }
-            }
+            "expression": null
           }
         }
       }

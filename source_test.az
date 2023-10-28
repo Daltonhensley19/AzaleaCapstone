@@ -1,7 +1,11 @@
-// Show support for as style type casting 
-// Show support for list indexing support
 
-/* this is a comment */
+
+add_two :: (int, int) -> int
+add_two n1 n2 = {
+    n1 + n2
+}
+
+
 
 Color :: choice {
     Red,
@@ -10,19 +14,20 @@ Color :: choice {
 }
 
 Person :: structure {
-    name :: text,
-    age :: int
+    age :: int,
+    name :: text
 }
+Person :: structure {
+    age :: int,
+    name :: text
+}
+
 
 main :: () 
 main = {
+   let x <- 2;
 
-    let x <- [1, dog, cat, 3];
-    let z <- Person(2, cat, dog, name);
-
-    let t1 <- z.age;
-    let x1 <- Color::Red;
-
+   let y <- x;
 }
 
                                                                                                                                                                                                                                                                                                                                                                                                                                     

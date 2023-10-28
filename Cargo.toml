@@ -6,14 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-preprocessor = {path = "shared/preprocessor/"}
-fuzzer       = {path = "shared/fuzzer/"}
-lexer        = {path = "shared/lexer/"}
-parser       = {path = "shared/parser/"}
-anyhow       = "1.0.71"
-indicatif    = "0.17.5"
-clap         = { version = "4.3.14", features = ["derive"] }
-serde_json   = "1.0.104"
+preprocessor      = {path = "shared/preprocessor/"}
+fuzzer            = {path = "shared/fuzzer/"}
+lexer             = {path = "shared/lexer/"}
+parser            = {path = "shared/parser/"}
+symbol_table      = {path = "shared/symbol_table/"}
+semantic_analyzer = {path = "shared/semantic_analyzer/"}
+anyhow            = "1.0.71"
+indicatif         = "0.17.5"
+clap              = { version = "4.3.14", features = ["derive"] }
+serde_json        = "1.0.104"
 
 
 [features]
